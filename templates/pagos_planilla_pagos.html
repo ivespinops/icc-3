@@ -1,0 +1,878 @@
+{% extends "base.html" %}
+
+{% block title %}Planilla de Pagos - Constructora ICC{% endblock %}
+
+{% block content %}
+<div class="welcome">
+    <h2>Planilla de Pagos</h2>
+    <p>Generar planilla final de pagos basada en la plantilla preliminar</p>
+</div>
+
+<div class="card">
+    <h3>Generar Planilla de Pagos</h3>
+    <p>Esta función toma la planilla resultante de la plantilla preliminar y genera la planilla final de pagos cruzándola con las cuentas bancarias.</p>
+    <p><em>📋 La planilla se guarda automáticamente y se carga al volver a esta sección.</em></p>
+    
+    <div id="loading" class="loading" style="display: none;">
+        <div class="spinner"></div>
+        <p>Generando planilla de pagos...</p>
+    </div>
+    
+    <button id="generarPlanilla" class="btn btn-primary" style="margin: 10px 0;">
+        Generar Planilla de Pagos
+    </button>
+    
+    <div id="resultado" style="margin-top: 20px;"></div>
+</div>
+
+<div id="estadisticas" class="card" style="display: none;">
+    <h3>Estadísticas</h3>
+    <div id="stats-content"></div>
+    <div id="sin-cuenta-warning" class="alert alert-warning" style="display: none; margin-top: 10px;">
+        <strong>⚠️ Advertencia:</strong> <span id="sin-cuenta-count">0</span> registros sin cuenta corriente configurada.
+    </div>
+</div>
+
+<div id="planillaData" class="card" style="display: none;">
+    <h3>Planilla de Pagos (Editable)</h3>
+    <div style="margin: 10px 0;">
+        <button id="agregarFila" class="btn btn-primary">Agregar Fila</button>
+        <button id="eliminarSeleccionadas" class="btn btn-danger">Eliminar Seleccionadas</button>
+        <button id="guardarCambios" class="btn btn-success">Guardar Cambios</button>
+        <button id="descargarMostrar" class="btn btn-secondary">Descargar Planilla</button>
+        <button id="descargarSantander" class="btn btn-info">Descargar Planilla Santander</button>
+    </div>
+    <div style="margin: 10px 0;">
+        <label>
+            <input type="checkbox" id="filtroSinCuenta" style="margin-right: 5px;">
+            Mostrar solo registros sin cuenta corriente
+        </label>
+    </div>
+    <div class="table-container">
+        <table id="tablaPlanilla" class="data-table editable-table">
+            <thead id="theadPlanilla"></thead>
+            <tbody id="tbodyPlanilla"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+// Función para formatear números como dinero con separador de miles
+function formatMoney(amount) {
+    if (amount == null || amount === '') return '0';
+    return Number(amount).toLocaleString('es-ES');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const generarBtn = document.getElementById('generarPlanilla');
+    const loading = document.getElementById('loading');
+    const resultado = document.getElementById('resultado');
+    const estadisticas = document.getElementById('estadisticas');
+    const planillaData = document.getElementById('planillaData');
+    const agregarFilaBtn = document.getElementById('agregarFila');
+    const eliminarBtn = document.getElementById('eliminarSeleccionadas');
+    const guardarBtn = document.getElementById('guardarCambios');
+    const descargarMostrarBtn = document.getElementById('descargarMostrar');
+    const descargarSantanderBtn = document.getElementById('descargarSantander');
+
+    // Cargar planilla existente al inicializar la página
+    cargarPlanillaExistente();
+
+    generarBtn.addEventListener('click', async function() {
+        try {
+            loading.style.display = 'block';
+            generarBtn.disabled = true;
+            resultado.innerHTML = '';
+            estadisticas.style.display = 'none';
+            planillaData.style.display = 'none';
+
+            const response = await fetch('/api/pagos/planilla-pagos', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.detail || 'Error al generar la planilla');
+            }
+
+            if (data.success) {
+                resultado.innerHTML = `
+                    <div class="alert alert-success">
+                        <strong>✅ Planilla generada exitosamente</strong><br>
+                        ${data.message}
+                    </div>
+                `;
+
+                // Mostrar estadísticas
+                if (data.estadisticas) {
+                    const stats = data.estadisticas;
+                    document.getElementById('stats-content').innerHTML = `
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-number">${stats.total_registros || 0}</div>
+                                <div class="stat-label">Total de Pagos</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">$${formatMoney(stats.total_monto || 0)}</div>
+                                <div class="stat-label">Monto Total</div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Mostrar advertencia si hay registros sin cuenta corriente
+                    const sinCuentaWarning = document.getElementById('sin-cuenta-warning');
+                    const sinCuentaCount = document.getElementById('sin-cuenta-count');
+                    if (stats.sin_cuenta_corriente && stats.sin_cuenta_corriente > 0) {
+                        sinCuentaCount.textContent = stats.sin_cuenta_corriente;
+                        sinCuentaWarning.style.display = 'block';
+                    } else {
+                        sinCuentaWarning.style.display = 'none';
+                    }
+                    
+                    estadisticas.style.display = 'block';
+                }
+
+                // Mostrar datos de la planilla
+                if (data.data && data.data.length > 0) {
+                    actualizarDatosPlanilla(data.data);
+                }
+
+                // Cambiar el texto del botón para indicar que hay una planilla generada
+                generarBtn.innerHTML = '🔄 Regenerar Planilla de Pagos';
+
+            } else {
+                resultado.innerHTML = `
+                    <div class="alert alert-error">
+                        <strong>❌ Error:</strong> ${data.message || 'No se pudo generar la planilla'}
+                    </div>
+                `;
+            }
+
+        } catch (error) {
+            console.error('Error:', error);
+            resultado.innerHTML = `
+                <div class="alert alert-error">
+                    <strong>❌ Error:</strong> ${error.message}
+                </div>
+            `;
+        } finally {
+            loading.style.display = 'none';
+            generarBtn.disabled = false;
+        }
+    });
+
+    // Variable global para almacenar los datos de la tabla
+    let tablaData = [];
+    let columnas = [];
+
+    // Agregar nueva fila
+    agregarFilaBtn.addEventListener('click', function() {
+        if (columnas.length === 0) {
+            alert('Primero debe generar la planilla');
+            return;
+        }
+        
+        const nuevaFila = {};
+        columnas.forEach(col => {
+            nuevaFila[col] = '';
+        });
+        
+        tablaData.push(nuevaFila);
+        mostrarTablaPlanilla(tablaData);
+    });
+
+    // Eliminar filas seleccionadas
+    eliminarBtn.addEventListener('click', function() {
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+        if (checkboxes.length === 0) {
+            alert('Seleccione al menos una fila para eliminar');
+            return;
+        }
+
+        if (confirm(`¿Está seguro de eliminar ${checkboxes.length} fila(s)?`)) {
+            const indices = Array.from(checkboxes).map(cb => parseInt(cb.dataset.index)).sort((a, b) => b - a);
+            indices.forEach(index => {
+                tablaData.splice(index, 1);
+            });
+            mostrarTablaPlanilla(tablaData);
+        }
+    });
+
+    // Guardar cambios
+    guardarBtn.addEventListener('click', async function() {
+        try {
+            // Recopilar datos de la tabla editada
+            const filasEditadas = recopilarDatosTabla();
+            
+            const response = await fetch('/api/pagos/planilla-pagos/guardar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ data: filasEditadas })
+            });
+
+            const result = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(result.detail || 'Error al guardar');
+            }
+
+            if (result.success) {
+                alert('✅ Cambios guardados exitosamente');
+                tablaData = filasEditadas; // Actualizar datos locales
+                // Recargar los datos desde el servidor para asegurar consistencia
+                await cargarPlanillaExistente();
+            }
+        } catch (error) {
+            console.error('Error al guardar:', error);
+            alert('Error al guardar los cambios: ' + error.message);
+        }
+    });
+
+    // Descargar planilla mostrar
+    descargarMostrarBtn.addEventListener('click', async function() {
+        try {
+            const response = await fetch('/api/pagos/planilla-pagos/download-mostrar');
+            
+            if (!response.ok) {
+                throw new Error('Error al descargar el archivo');
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = 'pagos_mostrar.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Error al descargar:', error);
+            alert('Error al descargar el archivo: ' + error.message);
+        }
+    });
+
+    // Descargar planilla Santander
+    descargarSantanderBtn.addEventListener('click', async function() {
+        try {
+            // Contar registros sin cuenta antes de descargar
+            const sinCuenta = datosOriginales.filter(row => row._sin_cuenta === true).length;
+            
+            // Mostrar advertencia si hay registros sin cuenta
+            if (sinCuenta > 0) {
+                const confirmar = confirm(
+                    `⚠️ ADVERTENCIA: ${sinCuenta} registro(s) no tienen cuenta corriente configurada.\n\n` +
+                    `Estos registros no podrán procesarse correctamente en el banco.\n\n` +
+                    `¿Desea continuar con la descarga?`
+                );
+                if (!confirmar) {
+                    return;
+                }
+            }
+            
+            const response = await fetch('/api/pagos/planilla-pagos/download-santander');
+            
+            if (!response.ok) {
+                throw new Error('Error al descargar el archivo Santander');
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = 'planilla_pagos_santander.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Error al descargar Santander:', error);
+            alert('Error al descargar el archivo Santander: ' + error.message);
+        }
+    });
+
+    // Filtro para mostrar solo registros sin cuenta corriente
+    const filtroSinCuenta = document.getElementById('filtroSinCuenta');
+    let datosOriginales = [];
+    
+    filtroSinCuenta.addEventListener('change', function() {
+        if (datosOriginales.length > 0) {
+            mostrarTablaPlanilla(datosOriginales, this.checked);
+        }
+    });
+
+    function mostrarTablaPlanilla(data, filtrarSinCuenta = false) {
+        const thead = document.getElementById('theadPlanilla');
+        const tbody = document.getElementById('tbodyPlanilla');
+        
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="100%">No hay datos disponibles</td></tr>';
+            columnas = [];
+            tablaData = [];
+            return;
+        }
+
+        // Filtrar datos si se solicita mostrar solo sin cuenta
+        let dataToShow = filtrarSinCuenta ? data.filter(row => row._sin_cuenta === true) : data;
+
+        // Actualizar variables globales
+        tablaData = [...data]; // Mantener todos los datos originales
+        columnas = Object.keys(data[0]).filter(col => col !== '_sin_cuenta'); // Excluir campo interno
+
+        // Crear encabezados con checkbox para seleccionar todo
+        thead.innerHTML = `
+            <tr>
+                <th><input type="checkbox" id="selectAll"></th>
+                ${columnas.map(col => `<th class="col-${col.replace(/\s+/g, '-').toLowerCase()}">${col}</th>`).join('')}
+                <th>Acciones</th>
+            </tr>
+        `;
+
+        // Crear filas de datos editables
+        tbody.innerHTML = dataToShow.map((row, index) => {
+            const originalIndex = data.indexOf(row);
+            const sinCuenta = row._sin_cuenta === true;
+            const rowClass = sinCuenta ? 'sin-cuenta-corriente' : '';
+            
+            return `
+                <tr class="${rowClass}">
+                    <td><input type="checkbox" data-index="${originalIndex}"></td>
+                    ${columnas.map(col => {
+                        const value = row[col];
+                        return `<td class="col-${col.replace(/\s+/g, '-').toLowerCase()}"><input type="text" value="${value || ''}" data-col="${col}" data-index="${originalIndex}" class="cell-input"></td>`;
+                    }).join('')}
+                    <td>
+                        <button class="btn-mini btn-danger" onclick="eliminarFila(${originalIndex})">🗑️</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        // Manejar selección de todos los checkboxes
+        document.getElementById('selectAll').addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"][data-index]');
+            checkboxes.forEach(cb => {
+                cb.checked = this.checked;
+            });
+        });
+    }
+
+    function recopilarDatosTabla() {
+        const filas = [];
+        const inputs = document.querySelectorAll('.cell-input');
+        
+        // Agrupar inputs por índice de fila
+        const filasPorIndice = {};
+        inputs.forEach(input => {
+            const index = parseInt(input.dataset.index);
+            const col = input.dataset.col;
+            const value = input.value;
+            
+            if (!filasPorIndice[index]) {
+                filasPorIndice[index] = {};
+            }
+            filasPorIndice[index][col] = value;
+        });
+        
+        // Convertir a array ordenado
+        for (let i = 0; i < Object.keys(filasPorIndice).length; i++) {
+            if (filasPorIndice[i]) {
+                filas.push(filasPorIndice[i]);
+            }
+        }
+        
+        return filas;
+    }
+
+    // Función global para eliminar fila individual
+    window.eliminarFila = function(index) {
+        if (confirm('¿Está seguro de eliminar esta fila?')) {
+            tablaData.splice(index, 1);
+            mostrarTablaPlanilla(tablaData);
+        }
+    };
+
+    // Actualizar datos cuando se genera la planilla
+    function actualizarDatosPlanilla(data) {
+        if (data && data.length > 0) {
+            datosOriginales = [...data]; // Guardar copia de los datos originales
+            mostrarTablaPlanilla(data);
+            planillaData.style.display = 'block';
+        }
+    }
+
+    // Función para cargar planilla existente al inicializar
+    async function cargarPlanillaExistente() {
+        try {
+            const response = await fetch('/api/pagos/planilla-pagos/status');
+            const data = await response.json();
+            
+            if (data.exists && data.success) {
+                resultado.innerHTML = `
+                    <div class="alert alert-success">
+                        <strong>📋 Planilla cargada</strong><br>
+                        ${data.message} (última planilla guardada)
+                    </div>
+                `;
+                
+                // Mostrar estadísticas
+                if (data.estadisticas) {
+                    const stats = data.estadisticas;
+                    document.getElementById('stats-content').innerHTML = `
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-number">${stats.total_registros || 0}</div>
+                                <div class="stat-label">Total de Pagos</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-number">$${formatMoney(stats.total_monto || 0)}</div>
+                                <div class="stat-label">Monto Total</div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Mostrar advertencia si hay registros sin cuenta corriente
+                    const sinCuentaWarning = document.getElementById('sin-cuenta-warning');
+                    const sinCuentaCount = document.getElementById('sin-cuenta-count');
+                    if (stats.sin_cuenta_corriente && stats.sin_cuenta_corriente > 0) {
+                        sinCuentaCount.textContent = stats.sin_cuenta_corriente;
+                        sinCuentaWarning.style.display = 'block';
+                    } else {
+                        sinCuentaWarning.style.display = 'none';
+                    }
+                    
+                    estadisticas.style.display = 'block';
+                }
+                
+                // Mostrar datos de la planilla
+                if (data.data && data.data.length > 0) {
+                    actualizarDatosPlanilla(data.data);
+                }
+                
+                // Cambiar el texto del botón para indicar que hay una planilla cargada
+                generarBtn.innerHTML = '🔄 Regenerar Planilla de Pagos';
+            }
+            
+        } catch (error) {
+            console.log('No hay planilla existente o error al cargar:', error);
+            // No mostrar error si no hay planilla, es normal en el primer uso
+        }
+    }
+});
+</script>
+
+<style>
+/* Dark theme optimized styles */
+.loading {
+    text-align: center;
+    padding: 30px;
+    background: rgba(26, 26, 26, 0.8);
+    border-radius: 8px;
+    border: 1px solid #333;
+}
+
+.loading p {
+    color: #e0e0e0;
+    margin-top: 15px;
+    font-size: 16px;
+}
+
+.spinner {
+    border: 4px solid #333;
+    border-top: 4px solid #0066cc;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.alert {
+    padding: 16px 20px;
+    border-radius: 8px;
+    margin: 15px 0;
+    font-size: 15px;
+    border-left: 4px solid;
+}
+
+.alert-success {
+    background-color: rgba(16, 185, 129, 0.15);
+    border-color: #10b981;
+    color: #10b981;
+    border-left-color: #10b981;
+}
+
+.alert-error {
+    background-color: rgba(239, 68, 68, 0.15);
+    border-color: #ef4444;
+    color: #ef4444;
+    border-left-color: #ef4444;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px;
+    margin: 25px 0;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 20px 15px;
+    background: linear-gradient(145deg, #1e1e1e, #2a2a2a);
+    border-radius: 12px;
+    border: 1px solid #333;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.stat-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+    border-color: #0066cc;
+}
+
+.stat-number {
+    font-size: 28px;
+    font-weight: bold;
+    color: #0066cc;
+    margin-bottom: 5px;
+    text-shadow: 0 2px 4px rgba(0, 102, 204, 0.3);
+}
+
+.stat-label {
+    color: #b0b0b0;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.table-container {
+    max-height: 600px;
+    overflow: auto;
+    border: 1px solid #333;
+    border-radius: 8px;
+    margin-top: 20px;
+    background: #1a1a1a;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.data-table th,
+.data-table td {
+    border: 1px solid #333;
+    padding: 12px 10px;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.data-table th {
+    background: linear-gradient(145deg, #2a2a2a, #333);
+    color: #e0e0e0;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #0066cc;
+}
+
+.data-table tr:nth-child(even) {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.data-table tr:hover {
+    background-color: rgba(0, 102, 204, 0.1);
+    transition: background-color 0.2s ease;
+}
+
+/* Estilo para filas sin cuenta corriente */
+.data-table tr.sin-cuenta-corriente {
+    background-color: rgba(220, 38, 38, 0.15) !important;
+    border-left: 4px solid #dc2626;
+}
+
+.data-table tr.sin-cuenta-corriente:hover {
+    background-color: rgba(220, 38, 38, 0.25) !important;
+}
+
+.data-table tr.sin-cuenta-corriente td {
+    color: #fca5a5;
+}
+
+.data-table td {
+    color: #d0d0d0;
+}
+
+/* Estilos para tabla editable */
+.cell-input {
+    background: transparent;
+    border: 1px solid #444;
+    color: #d0d0d0;
+    padding: 4px 6px;
+    border-radius: 3px;
+    width: 100%;
+    min-width: 80px;
+    font-size: 13px;
+    transition: border-color 0.2s ease;
+}
+
+.cell-input:focus {
+    outline: none;
+    border-color: #0066cc;
+    background: rgba(0, 102, 204, 0.1);
+}
+
+.cell-input:hover {
+    border-color: #666;
+}
+
+/* Checkboxes en tabla */
+.data-table input[type="checkbox"] {
+    transform: scale(1.2);
+    accent-color: #0066cc;
+}
+
+/* Columna de acciones más estrecha */
+.data-table th:last-child,
+.data-table td:last-child {
+    width: 80px;
+    text-align: center;
+}
+
+/* Columna de checkbox más estrecha */
+.data-table th:first-child,
+.data-table td:first-child {
+    width: 40px;
+    text-align: center;
+}
+
+/* Anchos específicos para columnas importantes */
+.data-table .col-rut {
+    min-width: 120px;
+}
+
+.data-table .col-razón-social {
+    min-width: 220px;
+}
+
+.data-table .col-rut-beneficiario {
+    min-width: 200px;
+}
+
+.data-table .col-nombre-beneficiario {
+    min-width: 220px;
+}
+
+.data-table .col-nombre-beneficiario-\(obligatorio-solo-si-banco-destino-no-es-santander\) {
+    min-width: 300px;
+}
+
+.data-table .col-glosa-personalizada-transferencia {
+    min-width: 280px;
+}
+
+.data-table .col-correo-beneficiario {
+    min-width: 200px;
+}
+
+.data-table .col-correo-beneficiario-\(opcional\) {
+    min-width: 220px;
+}
+
+.data-table .col-glosa-personalizada-transferencia-\(opcional\) {
+    min-width: 320px;
+}
+
+.data-table .col-mensaje-correo-beneficiario {
+    min-width: 280px;
+}
+
+.data-table .col-mensaje-correo-beneficiario-\(opcional\) {
+    min-width: 320px;
+}
+
+/* Scrollbar styling for dark theme */
+.table-container::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.table-container::-webkit-scrollbar-track {
+    background: #1a1a1a;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 4px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    margin-right: 12px;
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.btn-primary {
+    background: linear-gradient(145deg, #0066cc, #004499);
+    color: white;
+    border: 1px solid #0066cc;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: linear-gradient(145deg, #004499, #0066cc);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 102, 204, 0.3);
+}
+
+.btn-secondary {
+    background: linear-gradient(145deg, #404040, #2a2a2a);
+    color: #e0e0e0;
+    border: 1px solid #555;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: linear-gradient(145deg, #2a2a2a, #404040);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+.btn-success {
+    background: linear-gradient(145deg, #10b981, #059669);
+    color: white;
+    border: 1px solid #10b981;
+}
+
+.btn-success:hover:not(:disabled) {
+    background: linear-gradient(145deg, #059669, #10b981);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+}
+
+.btn-danger {
+    background: linear-gradient(145deg, #ef4444, #dc2626);
+    color: white;
+    border: 1px solid #ef4444;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: linear-gradient(145deg, #dc2626, #ef4444);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+}
+
+.btn-info {
+    background: linear-gradient(145deg, #06b6d4, #0891b2);
+    color: white;
+    border: 1px solid #06b6d4;
+}
+
+.btn-info:hover:not(:disabled) {
+    background: linear-gradient(145deg, #0891b2, #06b6d4);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(6, 182, 212, 0.3);
+}
+
+/* Botones mini para la tabla */
+.btn-mini {
+    padding: 4px 8px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    margin: 0 2px;
+    transition: all 0.2s ease;
+}
+
+.btn-mini.btn-danger {
+    background: #ef4444;
+    color: white;
+}
+
+.btn-mini.btn-danger:hover {
+    background: #dc2626;
+    transform: scale(1.1);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* Card styling improvements */
+.card {
+    background: linear-gradient(145deg, #1e1e1e, #2a2a2a);
+    border: 1px solid #333;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.card h3 {
+    color: #e0e0e0;
+    border-bottom: 2px solid #0066cc;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+/* Welcome section */
+.welcome h2 {
+    color: #0066cc;
+    text-shadow: 0 2px 4px rgba(0, 102, 204, 0.3);
+}
+
+.welcome p {
+    color: #b0b0b0;
+    font-size: 16px;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .btn {
+        width: 100%;
+        margin-right: 0;
+    }
+    
+    .data-table th,
+    .data-table td {
+        padding: 8px 6px;
+        font-size: 12px;
+    }
+}
+</style>
+{% endblock %}

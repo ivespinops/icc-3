@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Preparar Plantilla - Pagos - Constructora ICC{% endblock %}
+
+{% block content %}
+<div class="welcome">
+    <h2>Preparar Plantilla</h2>
+    <p>Submódulo para preparación de plantillas de pago</p>
+</div>
+
+<div class="card">
+    <h3>Certificados SII</h3>
+    <form id="uploadForm" enctype="multipart/form-data">
+        <div style="margin-bottom: 15px;">
+            <label for="certificadosFile" style="display: block; margin-bottom: 5px; font-weight: bold;">Seleccionar archivo de certificados SII (PDF):</label>
+            <input type="file" id="certificadosFile" name="certificadosFile" accept=".pdf" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+            <small style="color: #666; margin-top: 5px; display: block;">
+                Si no selecciona un archivo, se utilizará el archivo certificados_sii.pdf por defecto.
+            </small>
+        </div>
+        <button type="submit" style="background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">
+            Guardar Certificados
+        </button>
+    </form>
+    
+    <div id="uploadStatus" style="margin-top: 15px; padding: 10px; border-radius: 4px; display: none;">
+    </div>
+</div>
+
+<div class="card">
+    <h3>Flujo de Pagos</h3>
+    <form id="flujoPagosForm">
+        <div style="margin-bottom: 15px;">
+            <label for="numeroMeses" style="display: block; margin-bottom: 5px; font-weight: bold;">Número de meses hacia atrás:</label>
+            <input type="number" id="numeroMeses" name="numeroMeses" min="1" max="12" value="3" 
+                   style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+            <small style="color: #666; margin-top: 5px; display: block;">
+                Ingrese el número de meses hacia atrás para procesar facturas (incluye el mes actual + el número de meses ingresado).
+            </small>
+        </div>
+        <button type="submit" style="background-color: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">
+            Ejecutar Flujo de Pagos
+        </button>
+    </form>
+    
+    <div id="flujoPagosStatus" style="margin-top: 15px; padding: 10px; border-radius: 4px; display: none;">
+    </div>
+    
+    <div id="flujoPagosResults" style="margin-top: 15px; display: none;">
+        <h4>Resultados:</h4>
+        <div id="resultadosContent"></div>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Navegación</h3>
+    <p>• <a href="/pagos" style="color: #0066cc;">Volver al Módulo de Pagos</a></p>
+    <p>• <a href="/dashboard" style="color: #0066cc;">Volver al Dashboard</a></p>
+</div>
+
+<script>
+document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData();
+    const fileInput = document.getElementById('certificadosFile');
+    const statusDiv = document.getElementById('uploadStatus');
+    
+    if (fileInput.files[0]) {
+        formData.append('certificadosFile', fileInput.files[0]);
+    }
+    
+    try {
+        statusDiv.style.display = 'block';
+        statusDiv.innerHTML = '<span style="color: #007bff;">Procesando archivo...</span>';
+        statusDiv.style.backgroundColor = '#e3f2fd';
+        
+        const response = await fetch('/api/pagos/certificados', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            statusDiv.innerHTML = '<span style="color: #28a745;">✓ ' + result.message + '</span>';
+            statusDiv.style.backgroundColor = '#d4edda';
+            fileInput.value = '';
+        } else {
+            throw new Error(result.message || 'Error desconocido');
+        }
+    } catch (error) {
+        statusDiv.innerHTML = '<span style="color: #dc3545;">✗ Error: ' + error.message + '</span>';
+        statusDiv.style.backgroundColor = '#f8d7da';
+    }
+});
+
+document.getElementById('flujoPagosForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const numeroMeses = document.getElementById('numeroMeses').value;
+    const statusDiv = document.getElementById('flujoPagosStatus');
+    const resultsDiv = document.getElementById('flujoPagosResults');
+    const resultsContent = document.getElementById('resultadosContent');
+    
+    if (!numeroMeses || numeroMeses < 1) {
+        statusDiv.style.display = 'block';
+        statusDiv.innerHTML = '<span style="color: #dc3545;">✗ Por favor ingrese un número válido de meses</span>';
+        statusDiv.style.backgroundColor = '#f8d7da';
+        return;
+    }
+    
+    try {
+        statusDiv.style.display = 'block';
+        statusDiv.innerHTML = '<span style="color: #007bff;">Ejecutando flujo de pagos... Esto puede tomar varios minutos.</span>';
+        statusDiv.style.backgroundColor = '#e3f2fd';
+        resultsDiv.style.display = 'none';
+        
+        const response = await fetch('/api/pagos/flujo-pagos', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                meses: parseInt(numeroMeses)
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            statusDiv.innerHTML = '<span style="color: #28a745;">✓ Flujo de pagos ejecutado exitosamente</span>';
+            statusDiv.style.backgroundColor = '#d4edda';
+            
+            // Mostrar resultados
+            if (result.data && result.data.length > 0) {
+                let archivoInfo = '';
+                if (result.archivo_guardado) {
+                    archivoInfo = `<p><strong>Archivo guardado:</strong> ${result.archivo_guardado}</p>`;
+                }
+                
+                resultsContent.innerHTML = `
+                    <p><strong>Total de registros procesados:</strong> ${result.data.length}</p>
+                    <p><strong>Registros con cesiones:</strong> ${result.estadisticas.con_cesiones || 0}</p>
+                    <p><strong>Registros sin cesiones:</strong> ${result.estadisticas.sin_cesiones || 0}</p>
+                    <p><strong>Cesiones no cruzadas:</strong> ${result.estadisticas.cesiones_no_cruzadas || 0}</p>
+                    ${archivoInfo}
+                    <p style="margin-top: 15px; color: #666;"><em>Los resultados se han procesado correctamente y guardado en el directorio persistente.</em></p>
+                `;
+                resultsDiv.style.display = 'block';
+            } else {
+                resultsContent.innerHTML = `
+                    <p><strong>Total de registros procesados:</strong> ${result.estadisticas?.total_registros || 0}</p>
+                    <p style="color: #666;"><em>No se encontraron registros para procesar.</em></p>
+                `;
+                resultsDiv.style.display = 'block';
+            }
+        } else {
+            throw new Error(result.message || 'Error desconocido');
+        }
+    } catch (error) {
+        statusDiv.innerHTML = '<span style="color: #dc3545;">✗ Error: ' + error.message + '</span>';
+        statusDiv.style.backgroundColor = '#f8d7da';
+        resultsDiv.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

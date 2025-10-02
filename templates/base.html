@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Constructora ICC{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+</head>
+<body>
+    {% if user %}
+    <div class="layout-container">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h1>Constructora ICC</h1>
+                <button class="sidebar-toggle" id="sidebarToggle">
+                    <span class="hamburger"></span>
+                    <span class="hamburger"></span>
+                    <span class="hamburger"></span>
+                </button>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/dashboard" class="nav-item {% if request.url.path == '/dashboard' %}active{% endif %}">
+                    <span class="nav-icon">🏠</span>
+                    <span class="nav-text">Inicio</span>
+                </a>
+                <a href="/profile" class="nav-item {% if request.url.path == '/profile' %}active{% endif %}">
+                    <span class="nav-icon">👤</span>
+                    <span class="nav-text">Mi Perfil</span>
+                </a>
+                {% if user.is_manager %}
+                <div class="nav-group {% if request.url.path in ['/aprobaciones', '/aprobaciones/transferencias'] %}active{% endif %}">
+                    <div class="nav-item nav-group-toggle" onclick="toggleNavGroup(this)">
+                        <span class="nav-icon">✅</span>
+                        <span class="nav-text">Aprobaciones</span>
+                        <span class="nav-arrow">+</span>
+                    </div>
+                    <div class="nav-submenu">
+                        <a href="/aprobaciones" class="nav-item nav-subitem {% if request.url.path == '/aprobaciones' %}active{% endif %}">
+                            <span class="nav-icon">📋</span>
+                            <span class="nav-text">Principal</span>
+                        </a>
+                        <a href="/aprobaciones/transferencias" class="nav-item nav-subitem {% if request.url.path == '/aprobaciones/transferencias' %}active{% endif %}">
+                            <span class="nav-icon">💸</span>
+                            <span class="nav-text">Transferencias</span>
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+                {% if user.is_admin or user.is_manager %}
+                <a href="/flujo-caja" class="nav-item {% if request.url.path == '/flujo-caja' %}active{% endif %}">
+                    <span class="nav-icon">💵</span>
+                    <span class="nav-text">Flujo de caja</span>
+                </a>
+                {% endif %}
+                {% if not user.is_admin_obra and not user.is_manager %}
+                <div class="nav-group">
+                    <div class="nav-item nav-group-toggle {% if request.url.path in ['/facturas', '/preparar-facturas', '/facturas-subidas', '/cuentas', '/centros-costos'] %}active{% endif %}" onclick="toggleNavGroup(this)">
+                        <span class="nav-icon">💰</span>
+                        <span class="nav-text">Facturación</span>
+                        <span class="nav-arrow">+</span>
+                    </div>
+                    <div class="nav-submenu">
+                        <a href="/facturas" class="nav-item nav-subitem {% if request.url.path == '/facturas' %}active{% endif %}">
+                            <span class="nav-icon">📄</span>
+                            <span class="nav-text">Facturas</span>
+                        </a>
+                        <a href="/preparar-facturas" class="nav-item nav-subitem {% if request.url.path == '/preparar-facturas' %}active{% endif %}">
+                            <span class="nav-icon">📅</span>
+                            <span class="nav-text">Preparar Facturas</span>
+                        </a>
+                        <a href="/facturas-subidas" class="nav-item nav-subitem {% if request.url.path == '/facturas-subidas' %}active{% endif %}">
+                            <span class="nav-icon">📤</span>
+                            <span class="nav-text">Facturas Subidas</span>
+                        </a>
+                        <a href="/cuentas" class="nav-item nav-subitem {% if request.url.path == '/cuentas' %}active{% endif %}">
+                            <span class="nav-icon">📊</span>
+                            <span class="nav-text">Cuentas</span>
+                        </a>
+                        <a href="/centros-costos" class="nav-item nav-subitem {% if request.url.path == '/centros-costos' %}active{% endif %}">
+                            <span class="nav-icon">🏢</span>
+                            <span class="nav-text">Centros de Costos</span>
+                        </a>
+                    </div>
+                </div>
+                {% if not user.is_manager %}
+                <div class="nav-group {% if request.url.path in ['/pagos', '/pagos/preparar-plantilla', '/pagos/plantilla-preliminar', '/pagos/planilla-pagos', '/pagos/cesiones', '/pagos/cuentas-bancarias'] %}active{% endif %}">
+                    <div class="nav-item nav-group-toggle" onclick="toggleNavGroup(this)">
+                        <span class="nav-icon">💳</span>
+                        <span class="nav-text">Pagos</span>
+                        <span class="nav-arrow">+</span>
+                    </div>
+                    <div class="nav-submenu">
+                        <a href="/pagos/preparar-plantilla" class="nav-item nav-subitem {% if request.url.path == '/pagos/preparar-plantilla' %}active{% endif %}">
+                            <span class="nav-icon">📋</span>
+                            <span class="nav-text">Preparar Plantilla</span>
+                        </a>
+                        <a href="/pagos/plantilla-preliminar" class="nav-item nav-subitem {% if request.url.path == '/pagos/plantilla-preliminar' %}active{% endif %}">
+                            <span class="nav-icon">📊</span>
+                            <span class="nav-text">Plantilla Preliminar</span>
+                        </a>
+                        <a href="/pagos/planilla-pagos" class="nav-item nav-subitem {% if request.url.path == '/pagos/planilla-pagos' %}active{% endif %}">
+                            <span class="nav-icon">💼</span>
+                            <span class="nav-text">Planilla de Pagos</span>
+                        </a>
+                        <a href="/pagos/cesiones" class="nav-item nav-subitem {% if request.url.path == '/pagos/cesiones' %}active{% endif %}">
+                            <span class="nav-icon">📄</span>
+                            <span class="nav-text">Cesiones</span>
+                        </a>
+                        <a href="/pagos/cuentas-bancarias" class="nav-item nav-subitem {% if request.url.path == '/pagos/cuentas-bancarias' %}active{% endif %}">
+                            <span class="nav-icon">🏦</span>
+                            <span class="nav-text">Cuentas Bancarias</span>
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                {% if user.is_admin or user.is_admin_obra %}
+                <div class="nav-group {% if request.url.path.startswith('/obras') %}active{% endif %}">
+                    <div class="nav-item nav-group-toggle" onclick="toggleNavGroup(this)">
+                        <span class="nav-icon">🏗️</span>
+                        <span class="nav-text">Obras</span>
+                        <span class="nav-arrow">+</span>
+                    </div>
+                    <div class="nav-submenu" id="obrasSubmenu">
+                        <a href="/obras" class="nav-item nav-subitem {% if request.url.path == '/obras' %}active{% endif %}">
+                            <span class="nav-icon">📋</span>
+                            <span class="nav-text">Gestión de Obras</span>
+                        </a>
+                        {% if user.is_admin %}
+                        <a href="/obras/crear" class="nav-item nav-subitem {% if request.url.path == '/obras/crear' %}active{% endif %}">
+                            <span class="nav-icon">➕</span>
+                            <span class="nav-text">Crear Obra</span>
+                        </a>
+                        <a href="/obras/items" class="nav-item nav-subitem {% if request.url.path == '/obras/items' %}active{% endif %}">
+                            <span class="nav-icon">📦</span>
+                            <span class="nav-text">Gestión de Items</span>
+                        </a>
+                        {% endif %}
+                        <!-- Obras dinámicas se cargarán aquí -->
+                        <div id="obrasListDynamic"></div>
+                    </div>
+                </div>
+                {% endif %}
+                {% if user.is_admin %}
+                <a href="/admin/users" class="nav-item {% if request.url.path == '/admin/users' %}active{% endif %}">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-text">Gestión de Usuarios</span>
+                </a>
+                {% endif %}
+                <a href="/logout" class="nav-item logout">
+                    <span class="nav-icon">🚪</span>
+                    <span class="nav-text">Cerrar Sesión</span>
+                </a>
+            </nav>
+        </div>
+        
+        <!-- Main content -->
+        <div class="main-content" id="mainContent">
+            <div class="container">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const mainContent = document.getElementById('mainContent');
+            
+            sidebarToggle.addEventListener('click', function() {
+                sidebar.classList.toggle('collapsed');
+                mainContent.classList.toggle('expanded');
+            });
+            
+            // Auto-expand nav groups if any of their submenu items are active
+            const activeSubmenu = document.querySelector('.nav-submenu .nav-subitem.active');
+            if (activeSubmenu) {
+                const navGroup = activeSubmenu.closest('.nav-group');
+                if (navGroup) {
+                    navGroup.classList.add('expanded');
+                    const submenu = navGroup.querySelector('.nav-submenu');
+                    const arrow = navGroup.querySelector('.nav-arrow');
+                    submenu.style.maxHeight = submenu.scrollHeight + 'px';
+                    submenu.style.opacity = '1';
+                    submenu.style.visibility = 'visible';
+                    arrow.textContent = '−';
+                }
+            }
+            
+            // Also auto-expand if the nav-group-toggle itself is active (for main group pages)
+            const activeNavGroup = document.querySelector('.nav-group-toggle.active');
+            if (activeNavGroup && !activeNavGroup.closest('.nav-group').classList.contains('expanded')) {
+                const navGroup = activeNavGroup.parentElement;
+                navGroup.classList.add('expanded');
+                const submenu = navGroup.querySelector('.nav-submenu');
+                const arrow = activeNavGroup.querySelector('.nav-arrow');
+                submenu.style.maxHeight = submenu.scrollHeight + 'px';
+                submenu.style.opacity = '1';
+                submenu.style.visibility = 'visible';
+                arrow.textContent = '−';
+            }
+
+            // Cargar obras dinámicas en el menú
+            cargarObrasMenu();
+        });
+        
+        function toggleNavGroup(element) {
+            const navGroup = element.parentElement;
+            const submenu = navGroup.querySelector('.nav-submenu');
+            const arrow = element.querySelector('.nav-arrow');
+            
+            if (navGroup.classList.contains('expanded')) {
+                navGroup.classList.remove('expanded');
+                arrow.textContent = '+';
+                submenu.style.maxHeight = '0';
+                submenu.style.opacity = '0';
+                submenu.style.visibility = 'hidden';
+            } else {
+                navGroup.classList.add('expanded');
+                arrow.textContent = '−';
+                submenu.style.maxHeight = submenu.scrollHeight + 'px';
+                submenu.style.opacity = '1';
+                submenu.style.visibility = 'visible';
+            }
+        }
+
+        async function cargarObrasMenu() {
+            const obrasContainer = document.getElementById('obrasListDynamic');
+            if (!obrasContainer) return;
+
+            try {
+                const response = await fetch('/obras/lista');
+                const data = await response.json();
+
+                if (data.obras && data.obras.length > 0) {
+                    let html = '<div style="border-top: 1px solid #343a40; margin: 5px 0; padding-top: 5px;">';
+
+                    data.obras.forEach(obra => {
+                        const obraUrl = `/obras/${obra.id}`;
+                        const currentPath = window.location.pathname;
+                        const isObraActive = currentPath.startsWith(obraUrl);
+                        const activeClass = isObraActive ? 'active' : '';
+
+                        html += `
+                            <div class="obra-menu-item">
+                                <a href="${obraUrl}" class="nav-item nav-subitem ${activeClass}" style="font-size: 13px;">
+                                    <span class="nav-icon">🏗️</span>
+                                    <span class="nav-text" title="${obra.nombre_obra}">${obra.nombre_obra.length > 18 ? obra.nombre_obra.substring(0, 18) + '...' : obra.nombre_obra}</span>
+                                </a>
+                                ${isObraActive ? `
+                                <div class="obra-submenu">
+                                    <a href="/obras/${obra.id}/dashboard" class="nav-item nav-subitem ${currentPath === '/obras/' + obra.id + '/dashboard' ? 'active' : ''}">
+                                        <span class="nav-icon">📊</span>
+                                        <span class="nav-text">Dashboard</span>
+                                    </a>
+                                    <a href="/obras/${obra.id}/facturas" class="nav-item nav-subitem ${currentPath === '/obras/' + obra.id + '/facturas' ? 'active' : ''}">
+                                        <span class="nav-icon">📄</span>
+                                        <span class="nav-text">Facturas</span>
+                                    </a>
+                                    <a href="/obras/${obra.id}/reportes" class="nav-item nav-subitem ${currentPath === '/obras/' + obra.id + '/reportes' ? 'active' : ''}">
+                                        <span class="nav-icon">📈</span>
+                                        <span class="nav-text">Reportes</span>
+                                    </a>
+                                    <a href="/pagos?obra_id=${obra.id}" class="nav-item nav-subitem ${currentPath === '/pagos' && window.location.search.includes('obra_id=' + obra.id) ? 'active' : ''}">
+                                        <span class="nav-icon">💰</span>
+                                        <span class="nav-text">Pagos</span>
+                                    </a>
+                                </div>
+                                ` : ''}
+                            </div>
+                        `;
+                    });
+
+                    html += '</div>';
+                    obrasContainer.innerHTML = html;
+
+                    // Recalcular altura del submenu si está expandido
+                    const obrasSubmenu = document.getElementById('obrasSubmenu');
+                    const obrasNavGroup = obrasSubmenu.closest('.nav-group');
+                    if (obrasNavGroup && obrasNavGroup.classList.contains('expanded')) {
+                        obrasSubmenu.style.maxHeight = obrasSubmenu.scrollHeight + 'px';
+                    }
+                }
+            } catch (error) {
+                console.error('Error cargando obras en el menú:', error);
+            }
+        }
+    </script>
+    {% else %}
+    <div class="container">
+        {% block content_login %}{% endblock %}
+    </div>
+    {% endif %}
+</body>
+</html>

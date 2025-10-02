@@ -1,0 +1,490 @@
+{% extends "base.html" %}
+
+{% block title %}Flujo de Cajas - {{ obra.nombre_obra }} - Constructora ICC{% endblock %}
+
+{% block content %}
+<div class="welcome">
+    <h2>Flujo de Cajas - {{ obra.nombre_obra }}</h2>
+    <p>Centro de Costo: {{ obra.centro_costo }}</p>
+</div>
+
+<div class="card">
+    <h3>Configuración de Fechas del Proyecto</h3>
+    <form id="dates-form" style="display: flex; gap: 20px; margin-bottom: 20px;">
+        <div>
+            <label for="fecha_inicio">Fecha de Inicio:</label>
+            <input type="date" id="fecha_inicio" name="fecha_inicio" value="{{ fecha_inicio }}" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+        <div>
+            <label for="fecha_fin">Fecha de Fin:</label>
+            <input type="date" id="fecha_fin" name="fecha_fin" value="{{ fecha_fin }}" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+        <button type="submit" style="padding: 8px 16px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer;">Actualizar Fechas</button>
+    </form>
+</div>
+
+<div class="card">
+    <h3>Gestión de Elementos del Flujo de Cajas</h3>
+
+    <!-- Agregar desde catálogo -->
+    <div style="margin-bottom: 20px;">
+        <h4>Agregar desde Catálogo</h4>
+        <form id="add-from-catalog-form">
+            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 10px; margin-bottom: 10px;">
+                <select id="catalog-item" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">Seleccionar item del catálogo...</option>
+                </select>
+                <input type="number" id="catalog-presupuesto_inicial" placeholder="Presupuesto Inicial" step="0.01" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                <input type="number" id="catalog-modificaciones" placeholder="Modificaciones" step="0.01" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                <input type="number" id="catalog-gasto_real" placeholder="Gasto Real" step="0.01" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                <button type="submit" style="padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Agregar del Catálogo</button>
+            </div>
+        </form>
+    </div>
+
+
+    <!-- Links para administradores y gerentes -->
+    {% if user.is_admin or user.is_manager %}
+    <div style="margin-bottom: 20px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
+        <p style="margin: 0;"><strong>Gestión de Catálogo:</strong> <a href="/obras/items" style="color: #0066cc;">Administrar Items del Catálogo</a></p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h3>Tabla de Flujo de Cajas</h3>
+    <div style="overflow-x: auto;">
+        <table id="flujo-table" style="width: 100%; border-collapse: collapse; min-width: 1400px; background: #1a1a1a; color: #ffffff;">
+            <thead>
+                <tr style="background: #333333; color: #ffffff; border-bottom: 2px solid #555555;">
+                    <th style="padding: 12px; border: 1px solid #444444; text-align: left; background: #2c2c2c; color: #ffffff; min-width: 150px;">Familia</th>
+                    <th style="padding: 12px; border: 1px solid #444444; text-align: left; background: #2c2c2c; color: #ffffff; min-width: 100px;">Código</th>
+                    <th style="padding: 12px; border: 1px solid #444444; text-align: left; background: #2c2c2c; color: #ffffff; min-width: 200px;">Nombre</th>
+                    <th style="padding: 12px; border: 1px solid #444444; text-align: right; background: #2c2c2c; color: #ffffff; min-width: 120px;">Presupuesto Inicial $</th>
+                    <th style="padding: 12px; border: 1px solid #444444; text-align: right; background: #2c2c2c; color: #ffffff; min-width: 120px;">Modificaciones $</th>
+                    <th style="padding: 12px; border: 1px solid #444444; text-align: right; background: #2c2c2c; color: #ffffff; min-width: 140px;">Presupuesto Actualizado $</th>
+                    <th style="padding: 12px; border: 1px solid #444444; text-align: right; background: #2c2c2c; color: #ffffff; min-width: 130px;">Gasto Real a la fecha $</th>
+                    <th style="padding: 12px; border: 1px solid #444444; text-align: right; background: #2c2c2c; color: #ffffff; min-width: 130px;">Presupuesto Restante $</th>
+                    {% for semana in semanas %}
+                    <th style="padding: 12px; border: 1px solid #444444; text-align: center; writing-mode: vertical-rl; text-orientation: mixed; background: #2c2c2c; color: #ffffff; min-width: 80px;">{{ semana }}</th>
+                    {% endfor %}
+                    <th style="padding: 12px; border: 1px solid #444444; text-align: right; background: #2c2c2c; color: #ffffff; min-width: 120px;">Flujos futuros $</th>
+                    <th style="padding: 12px; border: 1px solid #444444; text-align: right; background: #2c2c2c; color: #ffffff; min-width: 140px;">Presupuesto Disponible $</th>
+                    <th style="padding: 12px; border: 1px solid #444444; text-align: center; background: #2c2c2c; color: #ffffff; min-width: 100px;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                {% for item in items %}
+                <tr data-id="{{ item.id }}" style="background: #2a2a2a; color: #ffffff;">
+                    <td style="padding: 10px; border: 1px solid #444444; background: #262626; color: #ffffff;">{{ item.familia or '' }}</td>
+                    <td style="padding: 10px; border: 1px solid #444444; background: #262626; color: #ffffff;">{{ item.codigo }}</td>
+                    <td style="padding: 10px; border: 1px solid #444444; background: #262626; color: #ffffff;">{{ item.nombre }}</td>
+                    <td style="padding: 10px; border: 1px solid #444444; text-align: right; background: #262626; color: #ffffff;">${{ "{:,.2f}".format(item.presupuesto_inicial) }}</td>
+                    <td style="padding: 6px; border: 1px solid #444444; text-align: center; background: #262626;">
+                        <input type="number"
+                               class="modificaciones-input"
+                               data-item-id="{{ item.id }}"
+                               value="{{ item.modificaciones }}"
+                               step="0.01"
+                               style="width: 100px; padding: 6px; border: 1px solid #555555; text-align: right; background: #1a1a1a; color: #ffffff; border-radius: 3px;">
+                    </td>
+                    <td class="presupuesto-actualizado" data-presupuesto-inicial="{{ item.presupuesto_inicial }}" style="padding: 10px; border: 1px solid #444444; text-align: right; background: #1e3a1e; color: #90ee90;">${{ "{:,.2f}".format(item.presupuesto_inicial + item.modificaciones) }}</td>
+                    <td style="padding: 10px; border: 1px solid #444444; text-align: right; background: #262626; color: #ffffff;">${{ "{:,.2f}".format(item.gasto_real) }}</td>
+                    <td class="presupuesto-restante" data-gasto-real="{{ item.gasto_real }}" style="padding: 10px; border: 1px solid #444444; text-align: right; background: #1e2a3a; color: #87ceeb;">${{ "{:,.2f}".format((item.presupuesto_inicial + item.modificaciones) - item.gasto_real) }}</td>
+                    {% for semana in semanas %}
+                    <td style="padding: 6px; border: 1px solid #444444; text-align: center; background: #262626;">
+                        <input type="number"
+                               class="week-input"
+                               data-item-id="{{ item.id }}"
+                               data-week="{{ semana }}"
+                               value="{{ item.flujo_semanal.get(semana, 0) }}"
+                               step="0.01"
+                               style="width: 75px; padding: 6px; border: 1px solid #555555; text-align: center; background: #1a1a1a; color: #ffffff; border-radius: 3px;">
+                    </td>
+                    {% endfor %}
+                    <td class="flujos-futuros" style="padding: 10px; border: 1px solid #444444; text-align: right; background: #2a1e3a; color: #dda0dd; font-weight: bold;">$0.00</td>
+                    <td class="presupuesto-disponible" style="padding: 10px; border: 1px solid #444444; text-align: right; background: #3a2a1e; color: #ffd700; font-weight: bold;">$0.00</td>
+                    <td style="padding: 10px; border: 1px solid #444444; text-align: center; background: #262626;">
+                        <button onclick="deleteItem({{ item.id }})" style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">Eliminar</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Resumen por Familia</h3>
+    <div style="overflow-x: auto;">
+        <table id="resumen-table" style="width: 100%; border-collapse: collapse; min-width: 1400px; background: #1a1a1a; color: #ffffff;">
+            <thead>
+                <tr style="background: #333333; color: #ffffff; border-bottom: 2px solid #555555;">
+                    <th style="padding: 12px; border: 1px solid #444444; text-align: left; background: #2c2c2c; color: #ffffff; min-width: 150px;">Familia</th>
+                    <th style="padding: 12px; border: 1px solid #444444; text-align: right; background: #2c2c2c; color: #ffffff; min-width: 120px;">Presupuesto Inicial $</th>
+                    <th style="padding: 12px; border: 1px solid #444444; text-align: right; background: #2c2c2c; color: #ffffff; min-width: 120px;">Modificaciones $</th>
+                    <th style="padding: 12px; border: 1px solid #444444; text-align: right; background: #2c2c2c; color: #ffffff; min-width: 140px;">Presupuesto Actualizado $</th>
+                    <th style="padding: 12px; border: 1px solid #444444; text-align: right; background: #2c2c2c; color: #ffffff; min-width: 130px;">Gasto Real a la fecha $</th>
+                    <th style="padding: 12px; border: 1px solid #444444; text-align: right; background: #2c2c2c; color: #ffffff; min-width: 130px;">Presupuesto Restante $</th>
+                    {% for semana in semanas %}
+                    <th style="padding: 12px; border: 1px solid #444444; text-align: center; writing-mode: vertical-rl; text-orientation: mixed; background: #2c2c2c; color: #ffffff; min-width: 80px;">{{ semana }}</th>
+                    {% endfor %}
+                    <th style="padding: 12px; border: 1px solid #444444; text-align: right; background: #2c2c2c; color: #ffffff; min-width: 120px;">Flujos futuros $</th>
+                    <th style="padding: 12px; border: 1px solid #444444; text-align: right; background: #2c2c2c; color: #ffffff; min-width: 140px;">Presupuesto Disponible $</th>
+                </tr>
+            </thead>
+            <tbody id="resumen-table-body">
+                {% for familia in familias_resumen %}
+                <tr style="background: #2a2a2a; color: #ffffff;">
+                    <td style="padding: 10px; border: 1px solid #444444; background: #262626; color: #ffffff; font-weight: bold;">{{ familia.familia }}</td>
+                    <td style="padding: 10px; border: 1px solid #444444; text-align: right; background: #262626; color: #ffffff;">${{ "{:,.2f}".format(familia.presupuesto_inicial) }}</td>
+                    <td style="padding: 10px; border: 1px solid #444444; text-align: right; background: #262626; color: #ffffff;">${{ "{:,.2f}".format(familia.modificaciones) }}</td>
+                    <td style="padding: 10px; border: 1px solid #444444; text-align: right; background: #1e3a1e; color: #90ee90;">${{ "{:,.2f}".format(familia.presupuesto_inicial + familia.modificaciones) }}</td>
+                    <td style="padding: 10px; border: 1px solid #444444; text-align: right; background: #262626; color: #ffffff;">${{ "{:,.2f}".format(familia.gasto_real) }}</td>
+                    <td style="padding: 10px; border: 1px solid #444444; text-align: right; background: #1e2a3a; color: #87ceeb;">${{ "{:,.2f}".format((familia.presupuesto_inicial + familia.modificaciones) - familia.gasto_real) }}</td>
+                    {% for semana in semanas %}
+                    <td style="padding: 6px; border: 1px solid #444444; text-align: center; background: #262626; color: #ffffff;">
+                        ${{ "{:,.2f}".format(familia.flujo_semanal.get(semana, 0)) }}
+                    </td>
+                    {% endfor %}
+                    <td class="resumen-flujos-futuros" style="padding: 10px; border: 1px solid #444444; text-align: right; background: #2a1e3a; color: #dda0dd; font-weight: bold;">
+                        ${{ "{:,.2f}".format(familia.flujo_semanal.values() | sum) }}
+                    </td>
+                    <td class="resumen-presupuesto-disponible" style="padding: 10px; border: 1px solid #444444; text-align: right; background: #3a2a1e; color: #ffd700; font-weight: bold;">
+                        {% set presupuesto_restante = (familia.presupuesto_inicial + familia.modificaciones) - familia.gasto_real %}
+                        {% set flujos_futuros = familia.flujo_semanal.values() | sum %}
+                        {% set presupuesto_disponible = presupuesto_restante - flujos_futuros %}
+                        {% if presupuesto_disponible < 0 %}
+                        <span style="background: #4a1e1e; color: #ff6b6b;">${{ "{:,.2f}".format(presupuesto_disponible) }}</span>
+                        {% else %}
+                        ${{ "{:,.2f}".format(presupuesto_disponible) }}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+
+                <!-- Fila de Total -->
+                <tr style="background: #1a1a2e; color: #ffffff; border-top: 3px solid #ffd700;">
+                    <td style="padding: 10px; border: 1px solid #444444; background: #1a1a2e; color: #ffd700; font-weight: bold; font-size: 16px;">{{ total_resumen.familia }}</td>
+                    <td style="padding: 10px; border: 1px solid #444444; text-align: right; background: #1a1a2e; color: #ffd700; font-weight: bold;">${{ "{:,.2f}".format(total_resumen.presupuesto_inicial) }}</td>
+                    <td style="padding: 10px; border: 1px solid #444444; text-align: right; background: #1a1a2e; color: #ffd700; font-weight: bold;">${{ "{:,.2f}".format(total_resumen.modificaciones) }}</td>
+                    <td style="padding: 10px; border: 1px solid #444444; text-align: right; background: #1a1a2e; color: #ffd700; font-weight: bold;">${{ "{:,.2f}".format(total_resumen.presupuesto_inicial + total_resumen.modificaciones) }}</td>
+                    <td style="padding: 10px; border: 1px solid #444444; text-align: right; background: #1a1a2e; color: #ffd700; font-weight: bold;">${{ "{:,.2f}".format(total_resumen.gasto_real) }}</td>
+                    <td style="padding: 10px; border: 1px solid #444444; text-align: right; background: #1a1a2e; color: #ffd700; font-weight: bold;">${{ "{:,.2f}".format((total_resumen.presupuesto_inicial + total_resumen.modificaciones) - total_resumen.gasto_real) }}</td>
+                    {% for semana in semanas %}
+                    <td style="padding: 6px; border: 1px solid #444444; text-align: center; background: #1a1a2e; color: #ffd700; font-weight: bold;">
+                        ${{ "{:,.2f}".format(total_resumen.flujo_semanal.get(semana, 0)) }}
+                    </td>
+                    {% endfor %}
+                    <td style="padding: 10px; border: 1px solid #444444; text-align: right; background: #1a1a2e; color: #ffd700; font-weight: bold;">
+                        ${{ "{:,.2f}".format(total_resumen.flujo_semanal.values() | sum) }}
+                    </td>
+                    <td style="padding: 10px; border: 1px solid #444444; text-align: right; background: #1a1a2e; color: #ffd700; font-weight: bold;">
+                        {% set total_presupuesto_restante = (total_resumen.presupuesto_inicial + total_resumen.modificaciones) - total_resumen.gasto_real %}
+                        {% set total_flujos_futuros = total_resumen.flujo_semanal.values() | sum %}
+                        {% set total_presupuesto_disponible = total_presupuesto_restante - total_flujos_futuros %}
+                        {% if total_presupuesto_disponible < 0 %}
+                        <span style="color: #ff6b6b;">${{ "{:,.2f}".format(total_presupuesto_disponible) }}</span>
+                        {% else %}
+                        ${{ "{:,.2f}".format(total_presupuesto_disponible) }}
+                        {% endif %}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Navegación</h3>
+    <p>• Volver al <a href="/obras/{{ obra.id }}" style="color: #0066cc;">Detalle de la Obra</a></p>
+    <p>• Ir al <a href="/obras" style="color: #0066cc;">Módulo de Obras</a></p>
+</div>
+
+<script>
+// Actualizar fechas del proyecto
+document.getElementById('dates-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+
+    try {
+        const response = await fetch(`/obras/{{ obra.id }}/flujo-cajas/fechas`, {
+            method: 'POST',
+            body: formData
+        });
+
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert('Error al actualizar las fechas');
+        }
+    } catch (error) {
+        alert('Error de conexión');
+    }
+});
+
+
+// Actualizar flujo semanal
+document.querySelectorAll('.week-input').forEach(input => {
+    input.addEventListener('change', async (e) => {
+        const itemId = e.target.dataset.itemId;
+        const week = e.target.dataset.week;
+        const value = parseFloat(e.target.value) || 0;
+
+        try {
+            const response = await fetch(`/obras/{{ obra.id }}/flujo-cajas/items/${itemId}/semana`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    semana: week,
+                    valor: value
+                })
+            });
+
+            if (!response.ok) {
+                alert('Error al actualizar el valor semanal');
+            }
+        } catch (error) {
+            alert('Error de conexión');
+        }
+    });
+});
+
+// Actualizar modificaciones
+document.querySelectorAll('.modificaciones-input').forEach(input => {
+    input.addEventListener('change', async (e) => {
+        const itemId = e.target.dataset.itemId;
+        const modificaciones = parseFloat(e.target.value) || 0;
+
+        try {
+            const response = await fetch(`/obras/{{ obra.id }}/flujo-cajas/items/${itemId}/modificaciones`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    modificaciones: modificaciones
+                })
+            });
+
+            if (response.ok) {
+                // Actualizar presupuesto actualizado y presupuesto restante
+                updateRowCalculations(e.target);
+            } else {
+                alert('Error al actualizar las modificaciones');
+            }
+        } catch (error) {
+            alert('Error de conexión');
+        }
+    });
+});
+
+// Función para actualizar los cálculos de una fila específica
+function updateRowCalculations(modificacionesInput) {
+    const row = modificacionesInput.closest('tr');
+    const presupuestoActualizadoCell = row.querySelector('.presupuesto-actualizado');
+    const presupuestoRestanteCell = row.querySelector('.presupuesto-restante');
+
+    if (presupuestoActualizadoCell && presupuestoRestanteCell) {
+        const presupuestoInicial = parseFloat(presupuestoActualizadoCell.dataset.presupuestoInicial) || 0;
+        const modificaciones = parseFloat(modificacionesInput.value) || 0;
+        const gastoReal = parseFloat(presupuestoRestanteCell.dataset.gastoReal) || 0;
+
+        // Calcular presupuesto actualizado
+        const presupuestoActualizado = presupuestoInicial + modificaciones;
+        presupuestoActualizadoCell.textContent = `$${presupuestoActualizado.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+        // Calcular presupuesto restante
+        const presupuestoRestante = presupuestoActualizado - gastoReal;
+        presupuestoRestanteCell.textContent = `$${presupuestoRestante.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+        // También actualizar el cálculo de presupuesto disponible si existe
+        updatePresupuestoDisponible(row);
+    }
+}
+
+// Función para actualizar presupuesto disponible
+function updatePresupuestoDisponible(row) {
+    const presupuestoRestanteCell = row.querySelector('.presupuesto-restante');
+    const flujosFuturosCell = row.querySelector('.flujos-futuros');
+    const presupuestoDisponibleCell = row.querySelector('.presupuesto-disponible');
+
+    if (presupuestoRestanteCell && flujosFuturosCell && presupuestoDisponibleCell) {
+        const presupuestoRestanteText = presupuestoRestanteCell.textContent.replace(/[$,]/g, '');
+        const presupuestoRestante = parseFloat(presupuestoRestanteText) || 0;
+
+        const flujosFuturosText = flujosFuturosCell.textContent.replace(/[$,]/g, '');
+        const flujosFuturos = parseFloat(flujosFuturosText) || 0;
+
+        const presupuestoDisponible = presupuestoRestante - flujosFuturos;
+
+        presupuestoDisponibleCell.textContent = `$${presupuestoDisponible.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+        // Cambiar color según el valor del presupuesto disponible
+        if (presupuestoDisponible < 0) {
+            presupuestoDisponibleCell.style.background = '#4a1e1e';
+            presupuestoDisponibleCell.style.color = '#ff6b6b';
+        } else {
+            presupuestoDisponibleCell.style.background = '#3a2a1e';
+            presupuestoDisponibleCell.style.color = '#ffd700';
+        }
+    }
+}
+
+// Eliminar elemento
+async function deleteItem(itemId) {
+    if (!confirm('¿Está seguro de que desea eliminar este elemento?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/obras/{{ obra.id }}/flujo-cajas/items/${itemId}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert('Error al eliminar el elemento');
+        }
+    } catch (error) {
+        alert('Error de conexión');
+    }
+}
+
+// Cargar items del catálogo
+async function loadCatalogItems() {
+    try {
+        const response = await fetch(`/obras/{{ obra.id }}/flujo-cajas/available-items`);
+        const data = await response.json();
+
+        const select = document.getElementById('catalog-item');
+        select.innerHTML = '<option value="">Seleccionar item del catálogo...</option>';
+
+        // Agrupar por tipo
+        const groupedItems = {};
+        data.items.forEach(item => {
+            if (!groupedItems[item.tipo]) {
+                groupedItems[item.tipo] = [];
+            }
+            groupedItems[item.tipo].push(item);
+        });
+
+        // Agregar opciones agrupadas
+        Object.keys(groupedItems).sort().forEach(tipo => {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = tipo;
+
+            groupedItems[tipo].forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = `${item.codigo} - ${item.nombre}`;
+                optgroup.appendChild(option);
+            });
+
+            select.appendChild(optgroup);
+        });
+    } catch (error) {
+        console.error('Error al cargar items del catálogo:', error);
+    }
+}
+
+// Agregar elemento desde catálogo
+document.getElementById('add-from-catalog-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const itemId = document.getElementById('catalog-item').value;
+    const presupuesto_inicial = parseFloat(document.getElementById('catalog-presupuesto_inicial').value) || 0;
+    const modificaciones = parseFloat(document.getElementById('catalog-modificaciones').value) || 0;
+    const gasto_real = parseFloat(document.getElementById('catalog-gasto_real').value) || 0;
+
+    if (!itemId) {
+        alert('Debe seleccionar un item del catálogo');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/obras/{{ obra.id }}/flujo-cajas/items/from-catalog`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                item_id: itemId,
+                presupuesto_inicial,
+                modificaciones,
+                gasto_real
+            })
+        });
+
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert('Error al agregar el elemento desde el catálogo');
+        }
+    } catch (error) {
+        alert('Error de conexión');
+    }
+});
+
+// Función para calcular flujos futuros y presupuesto disponible
+function calculateDerivedColumns() {
+    const rows = document.querySelectorAll('#table-body tr');
+
+    rows.forEach(row => {
+        const weekInputs = row.querySelectorAll('.week-input');
+        const presupuestoRestanteCell = row.querySelector('td:nth-child(8)');
+        const flujosFuturosCell = row.querySelector('.flujos-futuros');
+        const presupuestoDisponibleCell = row.querySelector('.presupuesto-disponible');
+
+        if (weekInputs.length > 0 && flujosFuturosCell && presupuestoDisponibleCell && presupuestoRestanteCell) {
+            // Calcular suma de flujos semanales (flujos futuros)
+            let flujosFuturos = 0;
+            weekInputs.forEach(input => {
+                const value = parseFloat(input.value) || 0;
+                flujosFuturos += value;
+            });
+
+            // Obtener presupuesto restante
+            const presupuestoRestanteText = presupuestoRestanteCell.textContent.replace(/[$,]/g, '');
+            const presupuestoRestante = parseFloat(presupuestoRestanteText) || 0;
+
+            // Calcular presupuesto disponible (Presupuesto Restante - Flujos futuros)
+            const presupuestoDisponible = presupuestoRestante - flujosFuturos;
+
+            // Actualizar las celdas
+            flujosFuturosCell.textContent = `$${flujosFuturos.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            presupuestoDisponibleCell.textContent = `$${presupuestoDisponible.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+            // Cambiar color según el valor del presupuesto disponible
+            if (presupuestoDisponible < 0) {
+                presupuestoDisponibleCell.style.background = '#4a1e1e';
+                presupuestoDisponibleCell.style.color = '#ff6b6b';
+            } else {
+                presupuestoDisponibleCell.style.background = '#3a2a1e';
+                presupuestoDisponibleCell.style.color = '#ffd700';
+            }
+        }
+    });
+}
+
+// Actualizar cálculos cuando cambie un input semanal
+document.querySelectorAll('.week-input').forEach(input => {
+    input.addEventListener('input', calculateDerivedColumns);
+});
+
+// Actualizar cálculos cuando cambie un input de modificaciones
+document.querySelectorAll('.modificaciones-input').forEach(input => {
+    input.addEventListener('input', () => updateRowCalculations(input));
+});
+
+// Cargar items del catálogo al inicializar la página
+document.addEventListener('DOMContentLoaded', () => {
+    loadCatalogItems();
+    calculateDerivedColumns();
+});
+</script>
+
+{% endblock %}

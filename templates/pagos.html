@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Pagos - Constructora ICC{% endblock %}
+
+{% block content %}
+<div class="welcome">
+    <h2>Módulo de Pagos</h2>
+    <p>Gestión de pagos y plantillas</p>
+</div>
+
+<div class="card">
+    <h3>Submódulos Disponibles</h3>
+    <div class="module-links">
+        <p>• <a href="/pagos/preparar-plantilla" style="color: #0066cc;">Preparar Plantilla</a> - Subir certificados y ejecutar flujo de pagos</p>
+        <p>• <a href="/pagos/plantilla-preliminar" style="color: #0066cc;">Plantilla Preliminar</a> - Ver todos los registros procesados</p>
+        <p>• <a href="/pagos/planilla-pagos" style="color: #0066cc;">Planilla de Pagos</a> - Generar planilla final de pagos</p>
+        <p>• <a href="/pagos/cesiones" style="color: #0066cc;">Cesiones</a> - Ver cesiones no cruzadas</p>
+        <p>• <a href="/pagos/cuentas-bancarias" style="color: #0066cc;">Cuentas Bancarias</a> - Gestionar cuentas bancarias</p>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Información del Usuario</h3>
+    <div class="user-info">
+        <p><strong>Usuario:</strong> {{ user.name }}</p>
+        <p><strong>Email:</strong> {{ user.email }}</p>
+    </div>
+</div>
+{% endblock %}

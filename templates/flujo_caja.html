@@ -1,0 +1,1332 @@
+{% extends "base.html" %}
+
+{% block title %}Flujo de caja - Constructora ICC{% endblock %}
+
+{% block content %}
+<div class="welcome">
+    <h2>Flujos Futuros $</h2>
+    <p>Vista consolidada de flujos de caja de todas las obras</p>
+</div>
+
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h3>Resumen por Familia - Agregado de todas las obras</h3>
+        <button class="btn-primary" onclick="showAddRowModal()">
+            ➕ Agregar Fila Personalizada
+        </button>
+    </div>
+
+    {% if familias_resumen %}
+    <div class="table-container">
+        <table class="flujo-table">
+            <thead>
+                <tr>
+                    <th>Tipo Flujo</th>
+                    <th>Familia</th>
+                    {% for semana in semanas %}
+                    <th style="writing-mode: vertical-rl; text-orientation: mixed; min-width: 80px;">{{ semana }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for familia in familias_resumen %}
+                <tr class="{% if familia.tipo_flujo == 'Ingresos por Obra' %}row-ingresos{% elif familia.tipo_flujo == 'Pagos' %}row-pagos{% elif familia.tipo_flujo == 'Saldo Previo' %}row-saldo-previo{% else %}row-otros{% endif %}">
+                    <td>{{ familia.tipo_flujo }}</td>
+                    <td>{{ familia.familia }}</td>
+                    {% for semana in semanas %}
+                    <td>
+                        {% if familia.get('editable') and familia.tipo_flujo == 'Saldo Previo' %}
+                            <input type="number"
+                                   value="{{ familia.flujo_semanal.get(semana, 0) | int }}"
+                                   onchange="updateSaldoPrevio('{{ familia.familia }}', '{{ semana }}', this.value)"
+                                   step="1000">
+                        {% elif familia.get('editable') and familia.tipo_flujo == 'Ingresos por Obra' %}
+                            <input type="number"
+                                   value="{{ familia.flujo_semanal.get(semana, 0) | int }}"
+                                   onchange="updateIngresoEditable('{{ familia.familia }}', '{{ semana }}', this.value)"
+                                   step="1000">
+                        {% else %}
+                            ${{ "{:,.0f}".format(familia.flujo_semanal.get(semana, 0)) }}
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+
+                <!-- Fila de Total Ingresos -->
+                <tr class="row-total-ingresos">
+                    <td>{{ total_ingresos.tipo_flujo }}</td>
+                    <td>{{ total_ingresos.familia }}</td>
+                    {% for semana in semanas %}
+                    <td>
+                        ${{ "{:,.0f}".format(total_ingresos.flujo_semanal.get(semana, 0)) }}
+                    </td>
+                    {% endfor %}
+                </tr>
+
+                <!-- Fila de Total Pagos -->
+                <tr class="row-total-pagos">
+                    <td>{{ total_pagos.tipo_flujo }}</td>
+                    <td>{{ total_pagos.familia }}</td>
+                    {% for semana in semanas %}
+                    <td>
+                        ${{ "{:,.0f}".format(total_pagos.flujo_semanal.get(semana, 0)) }}
+                    </td>
+                    {% endfor %}
+                </tr>
+
+                <!-- Fila de total -->
+                <tr class="row-total-resumen">
+                    <td>{{ total_resumen.tipo_flujo }}</td>
+                    <td>{{ total_resumen.familia }}</td>
+                    {% for semana in semanas %}
+                    <td>
+                        ${{ "{:,.0f}".format(total_resumen.flujo_semanal.get(semana, 0)) }}
+                    </td>
+                    {% endfor %}
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="padding: 20px; background: #2a2a2a; border: 1px solid #444444; border-radius: 8px; color: #ffffff; text-align: center;">
+        <h5 style="color: #ffd700; margin-bottom: 10px;">⚠️ No hay datos de flujo de caja disponibles</h5>
+        <p style="color: #cccccc; margin: 0;">No se encontraron datos de flujo de caja para ninguna obra.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Sección de Gestión de Créditos -->
+<div class="card" style="margin-top: 30px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3>🏦 Gestión de Créditos</h3>
+        <button class="btn-primary" onclick="showAddCreditModal()">
+            ➕ Nuevo Crédito
+        </button>
+    </div>
+
+    {% if creditos %}
+    <div class="table-container">
+        <table class="flujo-table">
+            <thead>
+                <tr>
+                    <th>Nombre del Crédito</th>
+                    <th>Banco</th>
+                    <th>Cuotas Restantes</th>
+                    <th>Valor Cuota</th>
+                    <th>Fecha de Pago</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for credito in creditos %}
+                <tr>
+                    <td>{{ credito.nombre_credito }}</td>
+                    <td>{{ credito.banco }}</td>
+                    <td>{{ credito.cuotas_restantes }}</td>
+                    <td>${{ "{:,.0f}".format(credito.valor_cuota) }}</td>
+                    <td>{{ credito.fecha_pago }}</td>
+                    <td>
+                        {% if credito.cuotas_restantes > 0 %}
+                        <button class="btn-action btn-payment" onclick="pagarCuota({{ credito.id }}, '{{ credito.nombre_credito }}')">
+                            💳 Pagar
+                        </button>
+                        {% endif %}
+                        <button class="btn-action btn-edit" onclick="editCredit({{ credito.id }}, '{{ credito.nombre_credito }}', '{{ credito.banco }}', {{ credito.cuotas_restantes }}, {{ credito.valor_cuota }}, '{{ credito.fecha_pago }}')">
+                            ✏️
+                        </button>
+                        <button class="btn-action btn-delete" onclick="deleteCredit({{ credito.id }}, '{{ credito.nombre_credito }}')">
+                            🗑️
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>No hay créditos registrados</p>
+        <button class="btn-primary" onclick="showAddCreditModal()">
+            ➕ Agregar Primer Crédito
+        </button>
+    </div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h3>Obras incluidas en el agregado</h3>
+    <div style="display: grid; gap: 15px;">
+        {% for obra in obras %}
+        <div style="background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: all 0.3s ease;"
+             onmouseover="this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'; this.style.transform='translateY(-2px)'"
+             onmouseout="this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'; this.style.transform='translateY(0)'">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 20px;">
+                <div style="flex: 1;">
+                    <h5 style="margin: 0 0 8px 0; color: #333; font-weight: 600;">{{ obra.nombre_obra }}</h5>
+                    <p style="margin: 0; color: #666; font-size: 14px;">
+                        <span style="font-weight: 500;">Administrador:</span> {{ obra.administrador_nombre }}
+                    </p>
+                    {% if obra.centro_costo %}
+                    <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">
+                        <span style="font-weight: 500;">Centro de Costo:</span> {{ obra.centro_costo }}
+                    </p>
+                    {% endif %}
+                </div>
+                <div>
+                    <a href="/obras/{{ obra.id }}/flujo-cajas"
+                       style="display: inline-block; padding: 10px 20px; background: #0066cc; color: white; text-decoration: none; border-radius: 6px; font-weight: 500; transition: background-color 0.3s ease;"
+                       onmouseover="this.style.backgroundColor='#0052a3'"
+                       onmouseout="this.style.backgroundColor='#0066cc'">
+                        Ver detalle
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Modal para agregar fila personalizada -->
+<div id="rowModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Agregar Fila Personalizada</h3>
+            <span class="close" onclick="closeRowModal()">&times;</span>
+        </div>
+        <form id="rowForm">
+            <div class="form-group">
+                <label for="tipo_flujo_select">Tipo de Flujo:</label>
+                <select id="tipo_flujo_select" name="tipo_flujo" required>
+                    <option value="">Seleccionar tipo...</option>
+                    <option value="Saldo Previo">Saldo Previo</option>
+                    <option value="Ingresos por Obra">Ingresos por Obra</option>
+                    <option value="Pagos">Pagos</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="familia_input">Familia:</label>
+                <input type="text" id="familia_input" name="familia" placeholder="Ingrese el nombre de la familia" required>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" onclick="closeRowModal()">Cancelar</button>
+                <button type="submit" class="btn-primary">Agregar Fila</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal para agregar/editar crédito -->
+<div id="creditModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">Agregar Nuevo Crédito</h3>
+            <span class="close" onclick="closeCreditModal()">&times;</span>
+        </div>
+        <form id="creditForm" method="POST" action="/flujo-caja/creditos">
+            <div class="form-group">
+                <label for="nombre_credito">Nombre del Crédito:</label>
+                <input type="text" id="nombre_credito" name="nombre_credito" required>
+            </div>
+
+            <div class="form-group">
+                <label for="banco">Banco:</label>
+                <input type="text" id="banco" name="banco" required>
+            </div>
+
+            <div class="form-group">
+                <label for="cuotas_restantes">Cuotas Restantes:</label>
+                <input type="number" id="cuotas_restantes" name="cuotas_restantes" min="1" required>
+            </div>
+
+            <div class="form-group">
+                <label for="valor_cuota">Valor de la Cuota ($):</label>
+                <input type="number" id="valor_cuota" name="valor_cuota" min="0" step="1000" required>
+            </div>
+
+            <div class="form-group">
+                <label for="fecha_pago">Fecha de Pago:</label>
+                <input type="date" id="fecha_pago" name="fecha_pago" required>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" onclick="closeCreditModal()">Cancelar</button>
+                <button type="submit" class="btn-primary" id="submitBtn">Guardar Crédito</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+/* Contenedor de tabla similar al de facturas */
+.table-container {
+    overflow: auto;
+    border: 1px solid #444444;
+    border-radius: 8px;
+    max-height: 70vh;
+    max-width: 100%;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+/* Scrollbars personalizados */
+.table-container::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+.table-container::-webkit-scrollbar-track {
+    background: #333;
+    border-radius: 6px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: #666;
+    border-radius: 6px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+    background: #888;
+}
+
+/* Tabla principal */
+.flujo-table {
+    width: 100%;
+    min-width: 1400px;
+    border-collapse: collapse;
+    background-color: #1a1a1a;
+    color: #ffffff;
+}
+
+.flujo-table th,
+.flujo-table td {
+    padding: 10px;
+    text-align: left;
+    border: 1px solid #444444;
+    white-space: nowrap;
+}
+
+.flujo-table th {
+    background-color: #2c2c2c;
+    color: #fff;
+    font-weight: bold;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    border-bottom: 2px solid #555555;
+}
+
+/* Columnas fijas - Headers */
+.flujo-table th:first-child,
+.flujo-table th:nth-child(2) {
+    position: sticky;
+    z-index: 40;
+    background-color: #2c2c2c;
+}
+
+.flujo-table th:first-child {
+    left: 0;
+}
+
+.flujo-table th:nth-child(2) {
+    left: 120px;
+}
+
+/* Columnas fijas - Celdas de datos */
+.flujo-table td:first-child,
+.flujo-table td:nth-child(2) {
+    position: sticky;
+    z-index: 10;
+    font-weight: bold;
+}
+
+.flujo-table td:first-child {
+    left: 0;
+}
+
+.flujo-table td:nth-child(2) {
+    left: 120px;
+}
+
+/* Background colors específicos para celdas sticky por tipo de fila */
+.row-saldo-previo td:first-child,
+.row-saldo-previo td:nth-child(2) {
+    background-color: #2a2a5a !important;
+}
+
+.row-ingresos td:first-child,
+.row-ingresos td:nth-child(2) {
+    background-color: #1b4a2d !important;
+}
+
+.row-pagos td:first-child,
+.row-pagos td:nth-child(2) {
+    background-color: #4a1b1b !important;
+}
+
+.row-otros td:first-child,
+.row-otros td:nth-child(2) {
+    background-color: #2a2a2a !important;
+}
+
+.row-total-ingresos td:first-child,
+.row-total-ingresos td:nth-child(2) {
+    background-color: #1b4a2d !important;
+}
+
+.row-total-pagos td:first-child,
+.row-total-pagos td:nth-child(2) {
+    background-color: #4a1b1b !important;
+}
+
+.row-total-resumen td:first-child,
+.row-total-resumen td:nth-child(2) {
+    background-color: #1a1a2e !important;
+    color: #ffd700 !important;
+}
+
+/* Hover effect */
+.flujo-table tbody tr:hover {
+    filter: brightness(1.1);
+}
+
+/* Colores por tipo de flujo */
+.row-saldo-previo {
+    background-color: #2a2a5a !important;
+    border-left: 4px solid #4169e1;
+}
+
+.row-saldo-previo td {
+    background-color: #2a2a5a !important;
+}
+
+.row-ingresos {
+    background-color: #1b4a2d !important;
+    border-left: 4px solid #28a745;
+}
+
+.row-ingresos td {
+    background-color: #1b4a2d !important;
+}
+
+.row-pagos {
+    background-color: #4a1b1b !important;
+    border-left: 4px solid #dc3545;
+}
+
+.row-pagos td {
+    background-color: #4a1b1b !important;
+}
+
+.row-otros {
+    background-color: #2a2a2a !important;
+    border-left: 4px solid #6c757d;
+}
+
+.row-otros td {
+    background-color: #2a2a2a !important;
+}
+
+/* Filas de totales con colores más intensos */
+.row-total-ingresos {
+    background-color: #1b4a2d !important;
+    border-top: 3px solid #28a745 !important;
+    border-left: 4px solid #28a745;
+}
+
+.row-total-ingresos td {
+    background-color: #1b4a2d !important;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.row-total-pagos {
+    background-color: #4a1b1b !important;
+    border-top: 3px solid #dc3545 !important;
+    border-left: 4px solid #dc3545;
+}
+
+.row-total-pagos td {
+    background-color: #4a1b1b !important;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.row-total-resumen {
+    background-color: #1a1a2e !important;
+    border-top: 4px solid #ffd700 !important;
+    border-left: 4px solid #ffd700;
+}
+
+.row-total-resumen td {
+    background-color: #1a1a2e !important;
+    color: #ffd700 !important;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+/* Inputs editables */
+.flujo-table input[type="number"] {
+    width: 80px;
+    background: #333;
+    color: #fff;
+    border: 1px solid #555;
+    text-align: center;
+    padding: 4px;
+    border-radius: 3px;
+}
+
+.flujo-table input[type="number"]:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+}
+
+/* Asegurar que las celdas de datos tengan el color correcto */
+.flujo-table td {
+    color: #ffffff;
+}
+
+/* Centrar contenido de celdas de datos */
+.flujo-table td:not(:first-child):not(:nth-child(2)) {
+    text-align: center;
+}
+
+/* Estilos para módulo de créditos */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: #2a2a2a;
+    margin: 5% auto;
+    padding: 0;
+    border: 1px solid #444444;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #444444;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #ffffff;
+}
+
+.close {
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.close:hover {
+    color: #ffffff;
+}
+
+.modal form {
+    padding: 20px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #444444;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+    background-color: #1a1a1a;
+    color: #ffffff;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+}
+
+.form-group select option {
+    background-color: #1a1a1a;
+    color: #ffffff;
+    padding: 10px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 30px;
+    border-top: 1px solid #444444;
+    padding-top: 20px;
+}
+
+.btn-primary, .btn-secondary, .btn-action {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #545b62;
+}
+
+.btn-action {
+    margin-right: 5px;
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+.btn-edit {
+    background-color: #28a745;
+    color: white;
+}
+
+.btn-edit:hover {
+    background-color: #1e7e34;
+}
+
+.btn-delete {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-delete:hover {
+    background-color: #c82333;
+}
+
+.btn-payment {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.btn-payment:hover {
+    background-color: #138496;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #cccccc;
+}
+
+/* Estilos para botón eliminar fila */
+.btn-delete-row {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    padding: 2px 6px;
+    margin-left: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.btn-delete-row:hover {
+    opacity: 1;
+    background-color: #c82333;
+}
+
+.flujo-table tr:hover .btn-delete-row {
+    opacity: 1;
+}
+</style>
+
+<script>
+async function updateSaldoPrevio(banco, semana, valor) {
+    try {
+        const formData = new FormData();
+        formData.append('banco', banco);
+        formData.append('semana', semana);
+        formData.append('valor', parseFloat(valor) || 0);
+
+        const response = await fetch('/flujo-caja/saldos-previos', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            alert('Error al guardar: ' + (result.message || 'Error desconocido'));
+            location.reload(); // Reload to show original value
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al guardar los datos');
+        location.reload();
+    }
+}
+
+async function updateIngresoEditable(tipoIngreso, semana, valor) {
+    try {
+        const formData = new FormData();
+        formData.append('tipo_ingreso', tipoIngreso);
+        formData.append('semana', semana);
+        formData.append('valor', parseFloat(valor) || 0);
+
+        const response = await fetch('/flujo-caja/ingresos-editables', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+            alert('Error al guardar: ' + (result.message || 'Error desconocido'));
+            location.reload(); // Reload to show original value
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al guardar los datos');
+        location.reload();
+    }
+}
+
+// Funciones para gestión de créditos
+function showAddCreditModal() {
+    document.getElementById('modalTitle').textContent = 'Agregar Nuevo Crédito';
+    document.getElementById('creditForm').action = '/flujo-caja/creditos';
+    document.getElementById('creditForm').method = 'POST';
+    document.getElementById('submitBtn').textContent = 'Guardar Crédito';
+
+    document.getElementById('creditForm').reset();
+    editingCreditId = null;
+    document.getElementById('creditModal').style.display = 'block';
+}
+
+function editCredit(id, nombre, banco, cuotas, valor, fecha) {
+    editingCreditId = id;
+    document.getElementById('modalTitle').textContent = 'Editar Crédito';
+    document.getElementById('submitBtn').textContent = 'Actualizar Crédito';
+
+    document.getElementById('nombre_credito').value = nombre;
+    document.getElementById('banco').value = banco;
+    document.getElementById('cuotas_restantes').value = cuotas;
+    document.getElementById('valor_cuota').value = valor;
+    document.getElementById('fecha_pago').value = fecha;
+
+    document.getElementById('creditModal').style.display = 'block';
+}
+
+function closeCreditModal() {
+    document.getElementById('creditModal').style.display = 'none';
+    editingCreditId = null;
+}
+
+function deleteCredit(id, nombre) {
+    if (confirm(`¿Estás seguro de que deseas eliminar el crédito "${nombre}"?`)) {
+        fetch(`/flujo-caja/creditos/${id}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                location.reload();
+            } else {
+                alert('Error al eliminar el crédito');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al eliminar el crédito');
+        });
+    }
+}
+
+function pagarCuota(id, nombre) {
+    if (confirm(`¿Confirmar pago de cuota para el crédito "${nombre}"?`)) {
+        fetch(`/flujo-caja/creditos/${id}/pagar-cuota`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert(`Cuota pagada correctamente. Cuotas restantes: ${data.cuotas_restantes}`);
+                location.reload();
+            } else {
+                alert('Error al procesar el pago');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al procesar el pago');
+        });
+    }
+}
+
+let editingCreditId = null;
+
+// Manejar formulario de créditos
+document.addEventListener('DOMContentLoaded', function() {
+    const creditForm = document.getElementById('creditForm');
+    if (creditForm) {
+        creditForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+
+            if (editingCreditId) {
+                const jsonData = {
+                    nombre_credito: formData.get('nombre_credito'),
+                    banco: formData.get('banco'),
+                    cuotas_restantes: formData.get('cuotas_restantes'),
+                    valor_cuota: formData.get('valor_cuota'),
+                    fecha_pago: formData.get('fecha_pago')
+                };
+
+                fetch(`/flujo-caja/creditos/${editingCreditId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(jsonData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        location.reload();
+                    } else {
+                        alert('Error al actualizar el crédito');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al actualizar el crédito');
+                });
+            } else {
+                this.submit();
+            }
+        });
+    }
+});
+
+// Funciones para gestión de filas personalizadas
+function showAddRowModal() {
+    document.getElementById('rowForm').reset();
+    document.getElementById('rowModal').style.display = 'block';
+}
+
+function closeRowModal() {
+    document.getElementById('rowModal').style.display = 'none';
+}
+
+function deleteCustomRow(familia) {
+    if (!confirm(`¿Estás seguro de que deseas eliminar la fila "${familia}"?`)) {
+        return;
+    }
+
+    // Encontrar y eliminar la fila de la tabla
+    const rows = document.querySelectorAll('.flujo-table tbody tr');
+    for (let row of rows) {
+        const familiaCell = row.children[1];
+        if (familiaCell && familiaCell.textContent.trim() === familia) {
+            // Verificar si es una fila personalizada (tiene botón de eliminar)
+            const deleteButton = row.querySelector('.btn-delete-row');
+            if (deleteButton) {
+                row.remove();
+                break;
+            }
+        }
+    }
+
+    // Eliminar de localStorage
+    removeCustomRowFromStorage(familia);
+
+    // Actualizar totales después de eliminar
+    updateTotalsWithCustomRows();
+}
+
+function removeCustomRowFromStorage(familia) {
+    // Eliminar metadata de la fila
+    const customRowsMetadata = JSON.parse(localStorage.getItem('customRowsMetadata') || '[]');
+    const updatedMetadata = customRowsMetadata.filter(row => row.familia !== familia);
+    localStorage.setItem('customRowsMetadata', JSON.stringify(updatedMetadata));
+
+    // Eliminar datos de la fila
+    const customRows = JSON.parse(localStorage.getItem('customFlowRows') || '{}');
+    if (customRows[familia]) {
+        delete customRows[familia];
+        localStorage.setItem('customFlowRows', JSON.stringify(customRows));
+    }
+}
+
+function addCustomRow(tipoFlujo, familia) {
+    // Crear nueva fila en la tabla
+    const table = document.querySelector('.flujo-table tbody');
+
+    // Obtener el número de columnas de la primera fila existente
+    const firstRow = table.querySelector('tr');
+    if (!firstRow) return;
+
+    const totalColumns = firstRow.children.length;
+    const semanaColumns = totalColumns - 2; // -2 por las columnas de Tipo y Familia
+
+    // Crear la nueva fila
+    const newRow = document.createElement('tr');
+
+    // Determinar clase CSS según el tipo de flujo
+    let rowClass = 'row-otros';
+    if (tipoFlujo === 'Saldo Previo') rowClass = 'row-saldo-previo';
+    else if (tipoFlujo === 'Ingresos por Obra') rowClass = 'row-ingresos';
+    else if (tipoFlujo === 'Pagos') rowClass = 'row-pagos';
+
+    newRow.className = rowClass;
+
+    // Crear celdas
+    let cellsHTML = `
+        <td>${tipoFlujo}
+            <button class="btn-delete-row" onclick="deleteCustomRow('${familia}')" title="Eliminar fila">
+                🗑️
+            </button>
+        </td>
+        <td>${familia}</td>
+    `;
+
+    // Agregar celdas editables para cada columna de semana
+    for (let i = 0; i < semanaColumns; i++) {
+        cellsHTML += `
+            <td>
+                <input type="number"
+                       value="0"
+                       onchange="updateCustomRowValue('${familia}', ${i}, this.value)"
+                       step="1000">
+            </td>
+        `;
+    }
+
+    newRow.innerHTML = cellsHTML;
+
+    // Encontrar la posición correcta según el tipo de flujo
+    const rows = Array.from(table.children);
+    let insertIndex = -1;
+
+    if (tipoFlujo === 'Saldo Previo') {
+        // Buscar la última fila de Saldo Previo e insertar después
+        for (let i = 0; i < rows.length; i++) {
+            const currentTipo = rows[i].children[0]?.textContent.trim();
+            if (currentTipo === 'Saldo Previo') {
+                insertIndex = i + 1; // Insertar después de la última fila de Saldo Previo
+            } else if (insertIndex === -1 && currentTipo !== 'Saldo Previo') {
+                insertIndex = i; // Si no hay filas de Saldo Previo, insertar al principio
+                break;
+            }
+        }
+        if (insertIndex === -1) insertIndex = 0; // Insertar al principio si no hay filas
+
+    } else if (tipoFlujo === 'Ingresos por Obra') {
+        // Buscar la última fila de Ingresos por Obra e insertar después
+        let foundIngresos = false;
+        for (let i = 0; i < rows.length; i++) {
+            const currentTipo = rows[i].children[0]?.textContent.trim();
+            if (currentTipo === 'Ingresos por Obra') {
+                insertIndex = i + 1;
+                foundIngresos = true;
+            } else if (foundIngresos && currentTipo !== 'Ingresos por Obra') {
+                break; // Ya pasamos la sección de Ingresos por Obra
+            } else if (!foundIngresos && currentTipo === 'TOTAL INGRESOS') {
+                insertIndex = i; // Insertar antes de TOTAL INGRESOS si no hay otras filas de ingresos
+                break;
+            }
+        }
+
+    } else if (tipoFlujo === 'Pagos') {
+        // Buscar la última fila de Pagos e insertar después
+        let foundPagos = false;
+        for (let i = 0; i < rows.length; i++) {
+            const currentTipo = rows[i].children[0]?.textContent.trim();
+            if (currentTipo === 'Pagos') {
+                insertIndex = i + 1;
+                foundPagos = true;
+            } else if (foundPagos && currentTipo !== 'Pagos') {
+                break; // Ya pasamos la sección de Pagos
+            } else if (!foundPagos && currentTipo === 'TOTAL PAGOS') {
+                insertIndex = i; // Insertar antes de TOTAL PAGOS si no hay otras filas de pagos
+                break;
+            }
+        }
+    }
+
+    // Si aún no encontramos posición, buscar antes de las filas de TOTAL
+    if (insertIndex === -1) {
+        const totalRows = ['TOTAL INGRESOS', 'TOTAL PAGOS', 'TOTAL'];
+        for (let i = 0; i < rows.length; i++) {
+            const rowTipo = rows[i].children[0]?.textContent.trim();
+            if (totalRows.includes(rowTipo)) {
+                insertIndex = i;
+                break;
+            }
+        }
+    }
+
+    // Insertar la fila en la posición correcta
+    if (insertIndex >= 0 && insertIndex < table.children.length) {
+        table.insertBefore(newRow, table.children[insertIndex]);
+    } else {
+        table.appendChild(newRow);
+    }
+
+    // Guardar en localStorage para persistencia
+    saveCustomRowToStorage(tipoFlujo, familia);
+
+    // Actualizar totales después de agregar la fila
+    updateTotalsWithCustomRows();
+}
+
+function updateCustomRowValue(familia, columnIndex, valor) {
+    // Esta función se puede expandir para guardar valores personalizados
+    console.log(`Actualizando ${familia}, columna ${columnIndex}: ${valor}`);
+
+    // Guardar en localStorage usando índices de columna
+    const customRows = JSON.parse(localStorage.getItem('customFlowRows') || '{}');
+    if (!customRows[familia]) {
+        customRows[familia] = {};
+    }
+    customRows[familia][columnIndex] = parseFloat(valor) || 0;
+    localStorage.setItem('customFlowRows', JSON.stringify(customRows));
+
+    // Actualizar totales después de cambiar el valor
+    updateTotalsWithCustomRows();
+}
+
+function updateTotalsWithCustomRows() {
+    const customRowsMetadata = JSON.parse(localStorage.getItem('customRowsMetadata') || '[]');
+    const customRows = JSON.parse(localStorage.getItem('customFlowRows') || '{}');
+
+    // Obtener el número de columnas de datos (excluyendo Tipo y Familia)
+    const firstRow = document.querySelector('.flujo-table tbody tr');
+    if (!firstRow) return;
+
+    const totalColumns = firstRow.children.length;
+    const dataColumns = totalColumns - 2; // -2 por las columnas de Tipo y Familia
+
+    // Calcular totales por tipo de flujo usando índices de columna
+    const totales = {
+        'Saldo Previo': {},
+        'Ingresos por Obra': {},
+        'Pagos': {}
+    };
+
+    // Inicializar totales a 0 para cada columna
+    for (let i = 0; i < dataColumns; i++) {
+        totales['Saldo Previo'][i] = 0;
+        totales['Ingresos por Obra'][i] = 0;
+        totales['Pagos'][i] = 0;
+    }
+
+    // Sumar valores de filas personalizadas
+    customRowsMetadata.forEach(rowData => {
+        const tipoFlujo = rowData.tipo_flujo;
+        const familia = rowData.familia;
+        const familyData = customRows[familia] || {};
+
+        if (totales[tipoFlujo]) {
+            for (let i = 0; i < dataColumns; i++) {
+                const valor = familyData[i] || 0;
+                totales[tipoFlujo][i] += valor;
+            }
+        }
+    });
+
+    // Actualizar filas de totales en la tabla
+    updateTotalRow('TOTAL INGRESOS', totales['Ingresos por Obra'], true);
+    updateTotalRow('TOTAL PAGOS', totales['Pagos'], true);
+
+    // Calcular y actualizar total general (Ingresos - Pagos)
+    const totalGeneral = {};
+    for (let i = 0; i < dataColumns; i++) {
+        totalGeneral[i] = totales['Ingresos por Obra'][i] - totales['Pagos'][i];
+    }
+    updateTotalRow('TOTAL', totalGeneral, true);
+}
+
+function updateTotalRow(familiaName, customTotals, addToExisting = false) {
+    // Buscar la fila de total
+    const rows = document.querySelectorAll('.flujo-table tbody tr');
+    let totalRow = null;
+
+    for (let row of rows) {
+        const familiaCell = row.children[1];
+        if (familiaCell && familiaCell.textContent.trim() === familiaName) {
+            totalRow = row;
+            break;
+        }
+    }
+
+    if (!totalRow) return;
+
+    // Obtener el número de columnas de datos
+    const totalColumns = totalRow.children.length;
+    const dataColumns = totalColumns - 2; // -2 por las columnas de Tipo y Familia
+
+    // Guardamos los valores originales en un atributo data si no existen
+    if (!totalRow.dataset.originalValues) {
+        const originalValues = {};
+
+        for (let i = 0; i < dataColumns; i++) {
+            const cellIndex = i + 2; // +2 por las columnas Tipo y Familia
+            const cell = totalRow.children[cellIndex];
+            if (cell) {
+                const cellText = cell.textContent.trim();
+                const match = cellText.match(/\$?([-\d,\.]+)/);
+                if (match) {
+                    originalValues[i] = parseFloat(match[1].replace(/,/g, '')) || 0;
+                } else {
+                    originalValues[i] = 0;
+                }
+            }
+        }
+        totalRow.dataset.originalValues = JSON.stringify(originalValues);
+    }
+
+    const originalValues = JSON.parse(totalRow.dataset.originalValues);
+
+    // Actualizar cada celda de datos
+    for (let i = 0; i < dataColumns; i++) {
+        const cellIndex = i + 2; // +2 porque las primeras dos columnas son Tipo y Familia
+        const cell = totalRow.children[cellIndex];
+
+        if (cell) {
+            const originalValue = originalValues[i] || 0;
+            const customValue = customTotals[i] || 0;
+            const newValue = addToExisting ? originalValue + customValue : customValue;
+
+            // Actualizar la celda con formato
+            cell.innerHTML = `$${newValue.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0})}`;
+        }
+    }
+}
+
+function saveCustomRowToStorage(tipoFlujo, familia) {
+    const customRowsMetadata = JSON.parse(localStorage.getItem('customRowsMetadata') || '[]');
+    const existingRow = customRowsMetadata.find(row => row.familia === familia);
+
+    if (!existingRow) {
+        customRowsMetadata.push({
+            tipo_flujo: tipoFlujo,
+            familia: familia,
+            timestamp: Date.now()
+        });
+        localStorage.setItem('customRowsMetadata', JSON.stringify(customRowsMetadata));
+    }
+}
+
+function loadCustomRowsFromStorage() {
+    const customRowsMetadata = JSON.parse(localStorage.getItem('customRowsMetadata') || '[]');
+    const customRows = JSON.parse(localStorage.getItem('customFlowRows') || '{}');
+
+    customRowsMetadata.forEach(rowData => {
+        // Verificar que la fila no exista ya
+        const existingRows = document.querySelectorAll('.flujo-table tbody tr');
+        const exists = Array.from(existingRows).some(row =>
+            row.children[1]?.textContent.trim() === rowData.familia
+        );
+
+        if (!exists) {
+            addCustomRowWithValues(rowData.tipo_flujo, rowData.familia, customRows[rowData.familia] || {});
+        }
+    });
+}
+
+function addCustomRowWithValues(tipoFlujo, familia, values) {
+    const table = document.querySelector('.flujo-table tbody');
+    if (!table) return;
+
+    // Obtener el número de columnas de la primera fila existente
+    const firstRow = table.querySelector('tr');
+    if (!firstRow) return;
+
+    const totalColumns = firstRow.children.length;
+    const semanaColumns = totalColumns - 2; // -2 por las columnas de Tipo y Familia
+
+    const newRow = document.createElement('tr');
+
+    let rowClass = 'row-otros';
+    if (tipoFlujo === 'Saldo Previo') rowClass = 'row-saldo-previo';
+    else if (tipoFlujo === 'Ingresos por Obra') rowClass = 'row-ingresos';
+    else if (tipoFlujo === 'Pagos') rowClass = 'row-pagos';
+
+    newRow.className = rowClass;
+
+    let cellsHTML = `
+        <td>${tipoFlujo}
+            <button class="btn-delete-row" onclick="deleteCustomRow('${familia}')" title="Eliminar fila">
+                🗑️
+            </button>
+        </td>
+        <td>${familia}</td>
+    `;
+
+    for (let i = 0; i < semanaColumns; i++) {
+        const value = values[i] || 0;
+        cellsHTML += `
+            <td>
+                <input type="number"
+                       value="${value}"
+                       onchange="updateCustomRowValue('${familia}', ${i}, this.value)"
+                       step="1000">
+            </td>
+        `;
+    }
+
+    newRow.innerHTML = cellsHTML;
+
+    // Insertar en posición apropiada (misma lógica que addCustomRow)
+    const rows = Array.from(table.children);
+    let insertIndex = -1;
+
+    if (tipoFlujo === 'Saldo Previo') {
+        // Buscar la última fila de Saldo Previo e insertar después
+        for (let i = 0; i < rows.length; i++) {
+            const currentTipo = rows[i].children[0]?.textContent.trim();
+            if (currentTipo === 'Saldo Previo') {
+                insertIndex = i + 1; // Insertar después de la última fila de Saldo Previo
+            } else if (insertIndex === -1 && currentTipo !== 'Saldo Previo') {
+                insertIndex = i; // Si no hay filas de Saldo Previo, insertar al principio
+                break;
+            }
+        }
+        if (insertIndex === -1) insertIndex = 0; // Insertar al principio si no hay filas
+
+    } else if (tipoFlujo === 'Ingresos por Obra') {
+        // Buscar la última fila de Ingresos por Obra e insertar después
+        let foundIngresos = false;
+        for (let i = 0; i < rows.length; i++) {
+            const currentTipo = rows[i].children[0]?.textContent.trim();
+            if (currentTipo === 'Ingresos por Obra') {
+                insertIndex = i + 1;
+                foundIngresos = true;
+            } else if (foundIngresos && currentTipo !== 'Ingresos por Obra') {
+                break; // Ya pasamos la sección de Ingresos por Obra
+            } else if (!foundIngresos && currentTipo === 'TOTAL INGRESOS') {
+                insertIndex = i; // Insertar antes de TOTAL INGRESOS si no hay otras filas de ingresos
+                break;
+            }
+        }
+
+    } else if (tipoFlujo === 'Pagos') {
+        // Buscar la última fila de Pagos e insertar después
+        let foundPagos = false;
+        for (let i = 0; i < rows.length; i++) {
+            const currentTipo = rows[i].children[0]?.textContent.trim();
+            if (currentTipo === 'Pagos') {
+                insertIndex = i + 1;
+                foundPagos = true;
+            } else if (foundPagos && currentTipo !== 'Pagos') {
+                break; // Ya pasamos la sección de Pagos
+            } else if (!foundPagos && currentTipo === 'TOTAL PAGOS') {
+                insertIndex = i; // Insertar antes de TOTAL PAGOS si no hay otras filas de pagos
+                break;
+            }
+        }
+    }
+
+    // Si aún no encontramos posición, buscar antes de las filas de TOTAL
+    if (insertIndex === -1) {
+        const totalRows = ['TOTAL INGRESOS', 'TOTAL PAGOS', 'TOTAL'];
+        for (let i = 0; i < rows.length; i++) {
+            const rowTipo = rows[i].children[0]?.textContent.trim();
+            if (totalRows.includes(rowTipo)) {
+                insertIndex = i;
+                break;
+            }
+        }
+    }
+
+    // Insertar la fila en la posición correcta
+    if (insertIndex >= 0 && insertIndex < table.children.length) {
+        table.insertBefore(newRow, table.children[insertIndex]);
+    } else {
+        table.appendChild(newRow);
+    }
+}
+
+// Manejar formulario de filas personalizadas
+document.addEventListener('DOMContentLoaded', function() {
+    const rowForm = document.getElementById('rowForm');
+    if (rowForm) {
+        rowForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const tipoFlujo = formData.get('tipo_flujo');
+            const familia = formData.get('familia');
+
+            if (tipoFlujo && familia) {
+                addCustomRow(tipoFlujo, familia);
+                closeRowModal();
+            }
+        });
+    }
+
+    // Cargar filas personalizadas al cargar la página
+    loadCustomRowsFromStorage();
+
+    // Actualizar totales después de cargar las filas
+    setTimeout(() => {
+        updateTotalsWithCustomRows();
+    }, 100);
+});
+
+// Cerrar modal al hacer clic fuera
+window.onclick = function(event) {
+    const creditModal = document.getElementById('creditModal');
+    const rowModal = document.getElementById('rowModal');
+
+    if (creditModal && event.target == creditModal) {
+        closeCreditModal();
+    }
+
+    if (rowModal && event.target == rowModal) {
+        closeRowModal();
+    }
+}
+</script>
+
+{% endblock %}

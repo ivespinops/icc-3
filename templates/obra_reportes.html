@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}Reportes - {{ obra.nombre_obra }} - Constructora ICC{% endblock %}
+
+{% block content %}
+<div class="welcome">
+    <h2>Reportes - {{ obra.nombre_obra }}</h2>
+    <p>Informes y análisis específicos de la obra</p>
+</div>
+
+<div class="card">
+    <h3>Información de la Obra</h3>
+    <div class="obra-info">
+        <p><strong>Nombre:</strong> {{ obra.nombre_obra }}</p>
+        <p><strong>Centro de Costo:</strong> {{ obra.centro_costo }}</p>
+        <p><strong>Administrador:</strong> {{ obra.administrador_nombre }}</p>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Reportes Disponibles</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px;">
+
+        <div style="border: 1px solid #ddd; border-radius: 8px; padding: 20px; background: #f8f9fa;">
+            <h4 style="color: #0066cc; margin-bottom: 10px;">📊 Reporte Financiero</h4>
+            <p style="font-size: 14px; color: #666; margin-bottom: 15px;">
+                Estado financiero completo de la obra, incluyendo ingresos, gastos y balance.
+            </p>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="generarReporte('financiero')" style="color: #fff; background: #007bff; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">
+                    Generar
+                </button>
+                <button onclick="descargarReporte('financiero')" style="color: #007bff; background: #fff; padding: 8px 16px; border: 1px solid #007bff; border-radius: 4px; cursor: pointer;">
+                    Descargar
+                </button>
+            </div>
+        </div>
+
+        <div style="border: 1px solid #ddd; border-radius: 8px; padding: 20px; background: #f8f9fa;">
+            <h4 style="color: #0066cc; margin-bottom: 10px;">📄 Reporte de Facturas</h4>
+            <p style="font-size: 14px; color: #666; margin-bottom: 15px;">
+                Listado detallado de todas las facturas procesadas en la obra.
+            </p>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="generarReporte('facturas')" style="color: #fff; background: #007bff; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">
+                    Generar
+                </button>
+                <button onclick="descargarReporte('facturas')" style="color: #007bff; background: #fff; padding: 8px 16px; border: 1px solid #007bff; border-radius: 4px; cursor: pointer;">
+                    Descargar
+                </button>
+            </div>
+        </div>
+
+        <div style="border: 1px solid #ddd; border-radius: 8px; padding: 20px; background: #f8f9fa;">
+            <h4 style="color: #0066cc; margin-bottom: 10px;">💰 Reporte de Pagos</h4>
+            <p style="font-size: 14px; color: #666; margin-bottom: 15px;">
+                Historial completo de pagos realizados y pendientes en la obra.
+            </p>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="generarReporte('pagos')" style="color: #fff; background: #007bff; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">
+                    Generar
+                </button>
+                <button onclick="descargarReporte('pagos')" style="color: #007bff; background: #fff; padding: 8px 16px; border: 1px solid #007bff; border-radius: 4px; cursor: pointer;">
+                    Descargar
+                </button>
+            </div>
+        </div>
+
+        <div style="border: 1px solid #ddd; border-radius: 8px; padding: 20px; background: #f8f9fa;">
+            <h4 style="color: #0066cc; margin-bottom: 10px;">📈 Reporte de Proveedores</h4>
+            <p style="font-size: 14px; color: #666; margin-bottom: 15px;">
+                Análisis de desempeño y estadísticas de proveedores de la obra.
+            </p>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="generarReporte('proveedores')" style="color: #fff; background: #007bff; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">
+                    Generar
+                </button>
+                <button onclick="descargarReporte('proveedores')" style="color: #007bff; background: #fff; padding: 8px 16px; border: 1px solid #007bff; border-radius: 4px; cursor: pointer;">
+                    Descargar
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div class="card">
+    <h3>Configuración de Reportes</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+        <div>
+            <label for="fechaDesde" style="display: block; margin-bottom: 5px; font-weight: bold;">Fecha Desde:</label>
+            <input type="date" id="fechaDesde" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+        <div>
+            <label for="fechaHasta" style="display: block; margin-bottom: 5px; font-weight: bold;">Fecha Hasta:</label>
+            <input type="date" id="fechaHasta" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+        <div>
+            <label for="formatoReporte" style="display: block; margin-bottom: 5px; font-weight: bold;">Formato:</label>
+            <select id="formatoReporte" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                <option value="pdf">PDF</option>
+                <option value="excel">Excel</option>
+                <option value="csv">CSV</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<div class="card" id="reporteContainer" style="display: none;">
+    <h3>Resultado del Reporte</h3>
+    <div id="reporteContent">
+        <!-- El contenido del reporte se mostrará aquí -->
+    </div>
+</div>
+
+<div class="card">
+    <h3>Navegación</h3>
+    <p>• Volver a <a href="/obras/{{ obra.id }}" style="color: #0066cc;">{{ obra.nombre_obra }}</a></p>
+    <p>• Ir al <a href="/obras" style="color: #0066cc;">Módulo de Obras</a></p>
+</div>
+
+<script>
+const obraId = {{ obra.id }};
+const centroCosto = "{{ obra.centro_costo }}";
+
+function generarReporte(tipo) {
+    const fechaDesde = document.getElementById('fechaDesde').value;
+    const fechaHasta = document.getElementById('fechaHasta').value;
+    const formato = document.getElementById('formatoReporte').value;
+
+    console.log(`Generando reporte ${tipo} para obra ${obraId}`);
+    console.log(`Desde: ${fechaDesde}, Hasta: ${fechaHasta}, Formato: ${formato}`);
+
+    // Mostrar el contenedor del reporte
+    const container = document.getElementById('reporteContainer');
+    const content = document.getElementById('reporteContent');
+
+    container.style.display = 'block';
+    content.innerHTML = '<p style="color: #007bff;">Generando reporte, por favor espere...</p>';
+
+    // Simular generación de reporte
+    setTimeout(() => {
+        const reporteData = generarDatosReporte(tipo);
+        mostrarReporte(reporteData, tipo);
+    }, 2000);
+}
+
+function generarDatosReporte(tipo) {
+    // Datos simulados - aquí deberías hacer llamadas a tu API
+    switch (tipo) {
+        case 'financiero':
+            return {
+                totalIngresos: 2500000,
+                totalGastos: 1800000,
+                balance: 700000,
+                facturasPagadas: 15,
+                facturasPendientes: 3
+            };
+        case 'facturas':
+            return {
+                totalFacturas: 18,
+                montoTotal: 1800000,
+                facturasPorEstado: {
+                    'Pagada': 15,
+                    'Sin Pagos': 3
+                }
+            };
+        case 'pagos':
+            return {
+                pagosProcesados: 15,
+                montoTotalPagos: 1650000,
+                pagosPendientes: 3,
+                montoPendiente: 150000
+            };
+        case 'proveedores':
+            return {
+                totalProveedores: 8,
+                proveedorTop: 'Proveedor ABC',
+                montoPromedio: 225000
+            };
+        default:
+            return {};
+    }
+}
+
+function mostrarReporte(data, tipo) {
+    const content = document.getElementById('reporteContent');
+
+    let html = `
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+            <h4 style="margin-top: 0;">Reporte de ${tipo.charAt(0).toUpperCase() + tipo.slice(1)}</h4>
+            <p><strong>Obra:</strong> {{ obra.nombre_obra }}</p>
+            <p><strong>Centro de Costo:</strong> {{ obra.centro_costo }}</p>
+            <p><strong>Fecha de Generación:</strong> ${new Date().toLocaleDateString('es-CL')}</p>
+        </div>
+    `;
+
+    switch (tipo) {
+        case 'financiero':
+            html += `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div style="background: #e8f5e8; padding: 15px; border-radius: 5px;">
+                        <h5 style="color: #388e3c; margin: 0 0 10px 0;">Total Ingresos</h5>
+                        <p style="font-size: 20px; font-weight: bold; margin: 0;">$${data.totalIngresos.toLocaleString()}</p>
+                    </div>
+                    <div style="background: #ffebee; padding: 15px; border-radius: 5px;">
+                        <h5 style="color: #d32f2f; margin: 0 0 10px 0;">Total Gastos</h5>
+                        <p style="font-size: 20px; font-weight: bold; margin: 0;">$${data.totalGastos.toLocaleString()}</p>
+                    </div>
+                    <div style="background: #e3f2fd; padding: 15px; border-radius: 5px;">
+                        <h5 style="color: #1976d2; margin: 0 0 10px 0;">Balance</h5>
+                        <p style="font-size: 20px; font-weight: bold; margin: 0;">$${data.balance.toLocaleString()}</p>
+                    </div>
+                </div>
+            `;
+            break;
+        case 'facturas':
+            html += `
+                <p><strong>Total de Facturas:</strong> ${data.totalFacturas}</p>
+                <p><strong>Monto Total:</strong> $${data.montoTotal.toLocaleString()}</p>
+                <p><strong>Facturas Pagadas:</strong> ${data.facturasPorEstado['Pagada']}</p>
+                <p><strong>Facturas Pendientes:</strong> ${data.facturasPorEstado['Sin Pagos']}</p>
+            `;
+            break;
+        default:
+            html += '<p>Reporte generado exitosamente</p>';
+    }
+
+    content.innerHTML = html;
+}
+
+function descargarReporte(tipo) {
+    const fechaDesde = document.getElementById('fechaDesde').value;
+    const fechaHasta = document.getElementById('fechaHasta').value;
+    const formato = document.getElementById('formatoReporte').value;
+
+    // Aquí implementarías la lógica de descarga
+    alert(`Descargando reporte ${tipo} en formato ${formato.toUpperCase()}`);
+}
+
+// Establecer fechas por defecto
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    document.getElementById('fechaDesde').value = firstDay.toISOString().split('T')[0];
+    document.getElementById('fechaHasta').value = today.toISOString().split('T')[0];
+});
+</script>
+
+{% endblock %}

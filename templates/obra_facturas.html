@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Facturas - {{ obra.nombre_obra }} - Constructora ICC{% endblock %}
+
+{% block content %}
+<div class="welcome">
+    <h2>Facturas - {{ obra.nombre_obra }}</h2>
+    <p>Gestión de facturas específicas de la obra</p>
+</div>
+
+<div class="card">
+    <h3>Información de la Obra</h3>
+    <div class="obra-info">
+        <p><strong>Nombre:</strong> {{ obra.nombre_obra }}</p>
+        <p><strong>Centro de Costo:</strong> {{ obra.centro_costo }}</p>
+        <p><strong>Administrador:</strong> {{ obra.administrador_nombre }}</p>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Filtros de Búsqueda</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+        <div>
+            <label for="filtroEstado" style="display: block; margin-bottom: 5px; font-weight: bold;">Estado:</label>
+            <select id="filtroEstado" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                <option value="">Todos</option>
+                <option value="Pagada">Pagada</option>
+                <option value="Sin Pagos">Pendiente</option>
+                <option value="Aprobada">Aprobada</option>
+            </select>
+        </div>
+        <div>
+            <label for="filtroFechaDesde" style="display: block; margin-bottom: 5px; font-weight: bold;">Desde:</label>
+            <input type="date" id="filtroFechaDesde" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+        <div>
+            <label for="filtroFechaHasta" style="display: block; margin-bottom: 5px; font-weight: bold;">Hasta:</label>
+            <input type="date" id="filtroFechaHasta" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+        </div>
+        <div style="display: flex; align-items: end;">
+            <button onclick="aplicarFiltros()" style="width: 100%; padding: 8px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                🔍 Buscar
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Lista de Facturas</h3>
+    <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+        <p id="resumenFacturas" style="margin: 0; color: #666;">Cargando facturas...</p>
+        <button onclick="exportarFacturas()" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">
+            📥 Exportar
+        </button>
+    </div>
+
+    <div id="facturasContainer" style="overflow-x: auto;">
+        <div style="text-align: center; padding: 40px; color: #666;">
+            <p>Cargando facturas de la obra...</p>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Navegación</h3>
+    <p>• Volver a <a href="/obras/{{ obra.id }}" style="color: #0066cc;">{{ obra.nombre_obra }}</a></p>
+    <p>• Ir al <a href="/obras" style="color: #0066cc;">Módulo de Obras</a></p>
+</div>
+
+<script>
+const obraId = {{ obra.id }};
+const centroCosto = "{{ obra.centro_costo }}";
+
+async function cargarFacturas() {
+    try {
+        // Aquí deberías hacer una llamada a tu API para obtener facturas filtradas por centro de costo
+        // Por ahora simularemos algunas facturas
+        const facturas = [
+            {
+                folio: "1001",
+                proveedor: "Proveedor Ejemplo 1",
+                monto: 150000,
+                fecha: "2025-01-15",
+                estado: "Pagada",
+                descripcion: "Materiales de construcción"
+            },
+            {
+                folio: "1002",
+                proveedor: "Proveedor Ejemplo 2",
+                monto: 85000,
+                fecha: "2025-01-20",
+                estado: "Sin Pagos",
+                descripcion: "Equipos de seguridad"
+            },
+            {
+                folio: "1003",
+                proveedor: "Proveedor Ejemplo 3",
+                monto: 320000,
+                fecha: "2025-01-22",
+                estado: "Aprobada",
+                descripcion: "Servicios especializados"
+            }
+        ];
+
+        mostrarFacturas(facturas);
+
+    } catch (error) {
+        console.error('Error cargando facturas:', error);
+        document.getElementById('facturasContainer').innerHTML =
+            '<p style="color: #dc3545; text-align: center;">Error al cargar las facturas</p>';
+    }
+}
+
+function mostrarFacturas(facturas) {
+    const container = document.getElementById('facturasContainer');
+    const resumen = document.getElementById('resumenFacturas');
+
+    if (facturas.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #666;">No se encontraron facturas para esta obra</p>';
+        resumen.textContent = 'No hay facturas registradas';
+        return;
+    }
+
+    const totalMonto = facturas.reduce((sum, f) => sum + f.monto, 0);
+    resumen.textContent = `${facturas.length} facturas encontradas - Total: $${totalMonto.toLocaleString()}`;
+
+    let html = `
+        <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+            <thead>
+                <tr style="background-color: #f8f9fa;">
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Folio</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Proveedor</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Descripción</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Monto</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Fecha</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    facturas.forEach(factura => {
+        const estadoColor = factura.estado === 'Pagada' ? '#28a745' :
+                           factura.estado === 'Sin Pagos' ? '#dc3545' : '#ffc107';
+
+        html += `
+            <tr>
+                <td style="border: 1px solid #ddd; padding: 8px;">${factura.folio}</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">${factura.proveedor}</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">${factura.descripcion}</td>
+                <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">$${factura.monto.toLocaleString()}</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">${factura.fecha}</td>
+                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">
+                    <span style="background: ${estadoColor}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                        ${factura.estado}
+                    </span>
+                </td>
+            </tr>
+        `;
+    });
+
+    html += '</tbody></table>';
+    container.innerHTML = html;
+}
+
+function aplicarFiltros() {
+    // Aquí implementarías la lógica de filtrado
+    console.log('Aplicando filtros...');
+    cargarFacturas(); // Por ahora recarga las mismas facturas
+}
+
+function exportarFacturas() {
+    // Aquí implementarías la lógica de exportación
+    alert('Funcionalidad de exportación en desarrollo');
+}
+
+// Cargar facturas al inicializar
+document.addEventListener('DOMContentLoaded', cargarFacturas);
+</script>
+
+{% endblock %}

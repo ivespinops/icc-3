@@ -1,0 +1,447 @@
+{% extends "base.html" %}
+
+{% block title %}Cesiones - Pagos - Constructora ICC{% endblock %}
+
+{% block content %}
+<div class="welcome">
+    <h2>Cesiones No Cruzadas</h2>
+    <p>Cesiones que no se encontraron en la planilla de pagos</p>
+</div>
+
+<div class="card">
+    <h3>Datos de Cesiones</h3>
+    <div id="loading" style="text-align: center; padding: 20px; display: block;">
+        <p>Cargando datos...</p>
+    </div>
+    
+    <div id="stats" style="margin-bottom: 20px; display: none;">
+        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+            <div style="background: #2a2a2a; padding: 10px; border-radius: 5px; flex: 1; min-width: 200px; border: 1px solid #444;">
+                <strong style="color: #ffffff;">Total de cesiones no cruzadas:</strong>
+                <span id="totalCesiones" style="font-size: 1.2em; color: #ffc107;">-</span>
+            </div>
+            <div style="background: #2a2a2a; padding: 10px; border-radius: 5px; flex: 1; min-width: 200px; border: 1px solid #444;">
+                <strong style="color: #ffffff;">Cesionarios únicos:</strong>
+                <span id="cesionariosUnicos" style="font-size: 1.2em; color: #28a745;">-</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="noData" style="display: none; text-align: center; padding: 20px; color: #666;">
+        <p>No hay cesiones no cruzadas o no se ha ejecutado el flujo de pagos. Execute primero el flujo de pagos en "Preparar Plantilla".</p>
+    </div>
+
+    <div id="tableContainer" style="display: none;">
+        <div style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+            <input type="text" id="searchInput" placeholder="Buscar..." style="flex: 1; min-width: 200px; padding: 8px; border: 1px solid #444; border-radius: 4px; background-color: #1a1a1a; color: #ffffff;">
+            <select id="cesionarioFilter" style="padding: 8px; border: 1px solid #444; border-radius: 4px; background-color: #1a1a1a; color: #ffffff;">
+                <option value="">Todos los cesionarios</option>
+            </select>
+            <button id="btnEliminarTodas" style="background-color: #dc2626; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                🗑️ Eliminar Todas
+            </button>
+        </div>
+        
+        <div style="overflow-x: auto;">
+            <table id="dataTable" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                <thead style="background-color: #2a2a2a;">
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+        
+        <div id="pagination" style="margin-top: 15px; text-align: center;">
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Información</h3>
+    <div class="info-box">
+        <div class="info-header">
+            <span class="info-icon">ℹ️</span>
+            <h4>¿Qué son las cesiones no cruzadas?</h4>
+        </div>
+        <p class="info-description">
+            Son las cesiones encontradas en el PDF de certificados SII que no pudieron relacionarse 
+            con ninguna factura en la planilla de pagos.
+        </p>
+        <div class="info-reasons">
+            <h5>Esto puede ocurrir cuando:</h5>
+            <ul>
+                <li><span class="bullet">•</span> La factura fue cedida más de una vez</li>
+                <li><span class="bullet">•</span> La factura no está en el rango de fechas procesado</li>
+                <li><span class="bullet">•</span> Hay diferencias en el RUT o folio entre el PDF y los datos</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<style>
+.info-box {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.info-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #0066cc, #28a745, #ffc107);
+}
+
+.info-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #444;
+}
+
+.info-icon {
+    font-size: 1.5em;
+    margin-right: 10px;
+    color: #0066cc;
+}
+
+.info-header h4 {
+    margin: 0;
+    color: #ffffff;
+    font-size: 1.2em;
+    font-weight: 600;
+}
+
+.info-description {
+    color: #e0e0e0;
+    line-height: 1.6;
+    margin-bottom: 15px;
+    font-size: 0.95em;
+}
+
+.info-reasons h5 {
+    color: #ffffff;
+    margin: 0 0 10px 0;
+    font-size: 1em;
+    font-weight: 500;
+}
+
+.info-reasons ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.info-reasons li {
+    color: #e0e0e0;
+    margin-bottom: 8px;
+    padding-left: 20px;
+    position: relative;
+    line-height: 1.4;
+    font-size: 0.9em;
+}
+
+.bullet {
+    position: absolute;
+    left: 0;
+    color: #0066cc;
+    font-weight: bold;
+}
+
+.info-reasons li:hover {
+    color: #ffffff;
+    transition: color 0.2s ease;
+}
+</style>
+
+<div class="card">
+    <h3>Navegación</h3>
+    <p>• <a href="/pagos/plantilla-preliminar" style="color: #0066cc;">Ver Plantilla Preliminar</a></p>
+    <p>• <a href="/pagos/preparar-plantilla" style="color: #0066cc;">Preparar Plantilla</a></p>
+    <p>• <a href="/pagos" style="color: #0066cc;">Volver al Módulo de Pagos</a></p>
+    <p>• <a href="/dashboard" style="color: #0066cc;">Volver al Dashboard</a></p>
+</div>
+
+<script>
+let currentData = [];
+let originalData = [];
+let currentPage = 1;
+const recordsPerPage = 20;
+
+async function loadData() {
+    try {
+        const response = await fetch('/api/pagos/cesiones');
+        const result = await response.json();
+        
+        document.getElementById('loading').style.display = 'none';
+        
+        if (result.success && result.data && result.data.length > 0) {
+            currentData = result.data;
+            originalData = [...result.data];
+            
+            // Mostrar estadísticas
+            document.getElementById('totalCesiones').textContent = result.data.length;
+            
+            // Calcular cesionarios únicos
+            const cesionariosUnicos = [...new Set(result.data.map(item => item.Cesionario || item.cesionario_nombre))];
+            document.getElementById('cesionariosUnicos').textContent = cesionariosUnicos.length;
+            
+            document.getElementById('stats').style.display = 'block';
+            
+            // Llenar filtro de cesionarios
+            populateCesionarioFilter(cesionariosUnicos);
+            
+            // Mostrar tabla
+            document.getElementById('tableContainer').style.display = 'block';
+            renderTable();
+            
+        } else {
+            document.getElementById('noData').style.display = 'block';
+        }
+    } catch (error) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('noData').style.display = 'block';
+        console.error('Error loading data:', error);
+    }
+}
+
+function populateCesionarioFilter(cesionarios) {
+    const filter = document.getElementById('cesionarioFilter');
+    
+    cesionarios.forEach(cesionario => {
+        if (cesionario) {
+            const option = document.createElement('option');
+            option.value = cesionario;
+            option.textContent = cesionario;
+            filter.appendChild(option);
+        }
+    });
+}
+
+function renderTable() {
+    if (currentData.length === 0) return;
+    
+    const table = document.getElementById('dataTable');
+    const thead = table.querySelector('thead');
+    const tbody = table.querySelector('tbody');
+    
+    // Limpiar tabla
+    thead.innerHTML = '';
+    tbody.innerHTML = '';
+    
+    // Crear encabezados
+    const headers = Object.keys(currentData[0]);
+    const headerRow = document.createElement('tr');
+    headers.forEach(header => {
+        const th = document.createElement('th');
+        th.textContent = header.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+        th.style.cssText = 'padding: 10px; border: 1px solid #333; background-color: #2a2a2a; font-weight: bold; color: #ffffff;';
+        headerRow.appendChild(th);
+    });
+    
+    // Agregar columna de acciones
+    const thAcciones = document.createElement('th');
+    thAcciones.textContent = 'Acciones';
+    thAcciones.style.cssText = 'padding: 10px; border: 1px solid #333; background-color: #2a2a2a; font-weight: bold; color: #ffffff; width: 100px;';
+    headerRow.appendChild(thAcciones);
+    
+    thead.appendChild(headerRow);
+    
+    // Calcular paginación
+    const startIndex = (currentPage - 1) * recordsPerPage;
+    const endIndex = Math.min(startIndex + recordsPerPage, currentData.length);
+    const pageData = currentData.slice(startIndex, endIndex);
+    
+    // Crear filas
+    pageData.forEach((row, index) => {
+        const tr = document.createElement('tr');
+        tr.style.backgroundColor = index % 2 === 0 ? '#1a1a1a' : '#2a2a2a';
+        
+        headers.forEach(header => {
+            const td = document.createElement('td');
+            td.textContent = row[header] || '';
+            td.style.cssText = 'padding: 8px; border: 1px solid #333; color: #ffffff;';
+            tr.appendChild(td);
+        });
+        
+        // Agregar columna de acciones con botón de eliminar
+        const tdAcciones = document.createElement('td');
+        tdAcciones.style.cssText = 'padding: 8px; border: 1px solid #333; color: #ffffff; text-align: center;';
+        
+        const btnEliminar = document.createElement('button');
+        btnEliminar.textContent = '🗑️';
+        btnEliminar.title = 'Eliminar cesión';
+        btnEliminar.style.cssText = 'background-color: #dc2626; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 12px;';
+        btnEliminar.addEventListener('mouseenter', () => btnEliminar.style.backgroundColor = '#b91c1c');
+        btnEliminar.addEventListener('mouseleave', () => btnEliminar.style.backgroundColor = '#dc2626');
+        
+        // El índice real en los datos originales
+        const realIndex = startIndex + index;
+        btnEliminar.addEventListener('click', () => eliminarCesion(realIndex));
+        
+        tdAcciones.appendChild(btnEliminar);
+        tr.appendChild(tdAcciones);
+        
+        tbody.appendChild(tr);
+    });
+    
+    // Renderizar paginación
+    renderPagination();
+}
+
+function renderPagination() {
+    const totalPages = Math.ceil(currentData.length / recordsPerPage);
+    const paginationDiv = document.getElementById('pagination');
+    
+    if (totalPages <= 1) {
+        paginationDiv.innerHTML = '';
+        return;
+    }
+    
+    let paginationHTML = '';
+    
+    // Botón anterior
+    if (currentPage > 1) {
+        paginationHTML += `<button onclick="changePage(${currentPage - 1})" style="margin: 2px; padding: 5px 10px;">Anterior</button>`;
+    }
+    
+    // Números de página
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === currentPage) {
+            paginationHTML += `<button style="margin: 2px; padding: 5px 10px; background-color: #007bff; color: white;">${i}</button>`;
+        } else {
+            paginationHTML += `<button onclick="changePage(${i})" style="margin: 2px; padding: 5px 10px;">${i}</button>`;
+        }
+    }
+    
+    // Botón siguiente
+    if (currentPage < totalPages) {
+        paginationHTML += `<button onclick="changePage(${currentPage + 1})" style="margin: 2px; padding: 5px 10px;">Siguiente</button>`;
+    }
+    
+    paginationDiv.innerHTML = paginationHTML;
+}
+
+function changePage(page) {
+    currentPage = page;
+    renderTable();
+}
+
+function applyFilters() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const cesionarioFilter = document.getElementById('cesionarioFilter').value;
+    
+    currentData = originalData.filter(row => {
+        const matchesSearch = searchTerm === '' || 
+            Object.values(row).some(value => 
+                String(value).toLowerCase().includes(searchTerm)
+            );
+        
+        const matchesCesionario = cesionarioFilter === '' || 
+            (row.Cesionario === cesionarioFilter || row.cesionario_nombre === cesionarioFilter);
+        
+        return matchesSearch && matchesCesionario;
+    });
+    
+    currentPage = 1;
+    renderTable();
+}
+
+async function eliminarCesion(index) {
+    if (!confirm('¿Estás seguro de que deseas eliminar esta cesión? Esta acción no se puede deshacer.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/pagos/cesiones/${index}`, {
+            method: 'DELETE'
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Error: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Actualizar estadísticas en tiempo real
+            document.getElementById('totalCesiones').textContent = result.total_restantes;
+            
+            // Recargar datos
+            await loadData();
+            
+            // Mostrar mensaje de éxito
+            alert('Cesión eliminada exitosamente');
+        } else {
+            throw new Error(result.message || 'Error desconocido');
+        }
+        
+    } catch (error) {
+        console.error('Error al eliminar cesión:', error);
+        alert('Error al eliminar cesión: ' + error.message);
+    }
+}
+
+async function eliminarTodasCesiones() {
+    if (!confirm('¿Estás seguro de que deseas eliminar TODAS las cesiones? Esta acción no se puede deshacer.')) {
+        return;
+    }
+    
+    if (!confirm('Esta acción eliminará permanentemente todas las cesiones. ¿Continuar?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/pagos/cesiones/all', {
+            method: 'DELETE'
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Error: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Actualizar estadísticas
+            document.getElementById('totalCesiones').textContent = '0';
+            document.getElementById('cesionariosUnicos').textContent = '0';
+            
+            // Ocultar tabla y mostrar mensaje de no datos
+            document.getElementById('tableContainer').style.display = 'none';
+            document.getElementById('stats').style.display = 'none';
+            document.getElementById('noData').style.display = 'block';
+            
+            // Mostrar mensaje de éxito
+            alert('Todas las cesiones han sido eliminadas exitosamente');
+        } else {
+            throw new Error(result.message || 'Error desconocido');
+        }
+        
+    } catch (error) {
+        console.error('Error al eliminar todas las cesiones:', error);
+        alert('Error al eliminar todas las cesiones: ' + error.message);
+    }
+}
+
+// Event listeners para filtros
+document.getElementById('searchInput').addEventListener('input', applyFilters);
+document.getElementById('cesionarioFilter').addEventListener('change', applyFilters);
+
+// Event listener para eliminar todas las cesiones
+document.getElementById('btnEliminarTodas').addEventListener('click', eliminarTodasCesiones);
+
+// Cargar datos al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    loadData();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Aprobaciones - Constructora ICC{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Sección de Aprobaciones</h2>
+    <p>Esta sección es exclusiva para usuarios con rol de Gerente.</p>
+</div>
+
+<div class="card">
+    <h3>Solicitudes Pendientes de Aprobación</h3>
+    <div style="overflow-x: auto; max-height: 600px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;">
+        <table style="width: 100%; border-collapse: collapse; background-color: #2d3748; color: white;">
+            <thead style="background-color: #1a202c; position: sticky; top: 0; z-index: 10;">
+                <tr>
+                    <th style="padding: 12px; border: 1px solid #4a5568; text-align: left; min-width: 80px; background-color: #1a202c;">ID</th>
+                    <th style="padding: 12px; border: 1px solid #4a5568; text-align: left; min-width: 120px; background-color: #1a202c;">Tipo</th>
+                    <th style="padding: 12px; border: 1px solid #4a5568; text-align: left; min-width: 200px; background-color: #1a202c;">Descripción</th>
+                    <th style="padding: 12px; border: 1px solid #4a5568; text-align: left; min-width: 150px; background-color: #1a202c;">Usuario Solicitante</th>
+                    <th style="padding: 12px; border: 1px solid #4a5568; text-align: left; min-width: 140px; background-color: #1a202c;">Fecha de Solicitud</th>
+                    <th style="padding: 12px; border: 1px solid #4a5568; text-align: left; min-width: 100px; background-color: #1a202c;">Estado</th>
+                    <th style="padding: 12px; border: 1px solid #4a5568; text-align: left; min-width: 120px; background-color: #1a202c;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="7" style="padding: 40px; text-align: center; color: #a0aec0;">
+                        <div>
+                            <p style="font-size: 18px; margin: 0 0 10px 0;">📋 No hay solicitudes pendientes de aprobación</p>
+                            <p style="margin: 0; font-size: 14px;">Las solicitudes aparecerán aquí cuando estén disponibles</p>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Historial de Aprobaciones</h3>
+    <div style="overflow-x: auto; max-height: 600px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;">
+        <table style="width: 100%; border-collapse: collapse; background-color: #2d3748; color: white;">
+            <thead style="background-color: #1a202c; position: sticky; top: 0; z-index: 10;">
+                <tr>
+                    <th style="padding: 12px; border: 1px solid #4a5568; text-align: left; min-width: 80px; background-color: #1a202c;">ID</th>
+                    <th style="padding: 12px; border: 1px solid #4a5568; text-align: left; min-width: 120px; background-color: #1a202c;">Tipo</th>
+                    <th style="padding: 12px; border: 1px solid #4a5568; text-align: left; min-width: 200px; background-color: #1a202c;">Descripción</th>
+                    <th style="padding: 12px; border: 1px solid #4a5568; text-align: left; min-width: 150px; background-color: #1a202c;">Usuario Solicitante</th>
+                    <th style="padding: 12px; border: 1px solid #4a5568; text-align: left; min-width: 140px; background-color: #1a202c;">Fecha de Aprobación</th>
+                    <th style="padding: 12px; border: 1px solid #4a5568; text-align: left; min-width: 100px; background-color: #1a202c;">Estado</th>
+                    <th style="padding: 12px; border: 1px solid #4a5568; text-align: left; min-width: 120px; background-color: #1a202c;">Aprobado por</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="7" style="padding: 40px; text-align: center; color: #a0aec0;">
+                        <div>
+                            <p style="font-size: 18px; margin: 0 0 10px 0;">📋 No hay aprobaciones registradas</p>
+                            <p style="margin: 0; font-size: 14px;">El historial aparecerá aquí cuando se realicen aprobaciones</p>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

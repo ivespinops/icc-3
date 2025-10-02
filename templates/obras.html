@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Módulo Obras - Constructora ICC{% endblock %}
+
+{% block content %}
+<div class="welcome">
+    <h2>Módulo de Obras</h2>
+    <p>Gestión y administración de obras de la constructora</p>
+</div>
+
+<div class="card">
+    <h3>Información del Usuario</h3>
+    <div class="user-info">
+        <p><strong>Usuario:</strong> {{ user.name }}</p>
+        <p><strong>Email:</strong> {{ user.email }}</p>
+        <p><strong>Rol:</strong>
+            {% if user.is_admin %}Administrador{% endif %}
+            {% if user.is_manager %}Gerente{% endif %}
+            {% if user.is_admin_obra %}Admin Obra{% endif %}
+        </p>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Funcionalidades del Módulo Obras</h3>
+    <div class="module-functions">
+        <p>• Gestión de obras activas</p>
+        <p>• Control de avance de obras</p>
+        <p>• Administración de recursos</p>
+        <p>• Reportes de obras</p>
+        <p>• Asignación de personal</p>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Acciones Disponibles</h3>
+    <div class="actions">
+        {% if user.is_admin %}
+        <p>• <strong>Administrador:</strong> Acceso completo a todas las funciones</p>
+        <p>• <a href="/obras/crear" style="color: #0066cc;">➕ Crear Nueva Obra</a></p>
+        {% endif %}
+        {% if user.is_manager %}
+        <p>• <strong>Gerente:</strong> Supervisión y aprobación de obras</p>
+        <p>• <a href="/obras/crear" style="color: #0066cc;">➕ Crear Nueva Obra</a></p>
+        {% endif %}
+        {% if user.is_admin_obra %}
+        <p>• <strong>Admin Obra:</strong> Gestión operativa de obras específicas</p>
+        {% endif %}
+        <p>• <a href="#" id="listarObras" style="color: #0066cc;">📋 Ver Lista de Obras</a></p>
+    </div>
+</div>
+
+<div class="card" id="obrasContainer" style="display: none;">
+    <h3>Lista de Obras</h3>
+    <div id="obrasContent">
+        <!-- El contenido se cargará dinámicamente -->
+    </div>
+</div>
+
+<div class="card">
+    <h3>Navegación</h3>
+    <p>• Volver al <a href="/dashboard" style="color: #0066cc;">Dashboard Principal</a></p>
+</div>
+
+<script>
+document.getElementById('listarObras').addEventListener('click', async function(e) {
+    e.preventDefault();
+
+    const obrasContainer = document.getElementById('obrasContainer');
+    const obrasContent = document.getElementById('obrasContent');
+
+    try {
+        const response = await fetch('/obras/lista');
+        const data = await response.json();
+
+        if (data.obras && data.obras.length > 0) {
+            let html = `
+                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                    <thead>
+                        <tr style="background-color: #f8f9fa;">
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Nombre de Obra</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Centro de Costo</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Administrador</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Fecha Creación</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            data.obras.forEach(obra => {
+                const fecha = new Date(obra.created_at).toLocaleDateString('es-CL');
+                html += `
+                    <tr>
+                        <td style="border: 1px solid #ddd; padding: 8px;">
+                            <a href="/obras/${obra.id}" style="color: #0066cc; text-decoration: none;">
+                                ${obra.nombre_obra}
+                            </a>
+                        </td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${obra.centro_costo}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${obra.administrador_nombre}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${fecha}</td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                    </tbody>
+                </table>
+            `;
+
+            obrasContent.innerHTML = html;
+        } else {
+            obrasContent.innerHTML = '<p style="color: #666; font-style: italic;">No hay obras registradas.</p>';
+        }
+
+        obrasContainer.style.display = 'block';
+
+    } catch (error) {
+        console.error('Error:', error);
+        obrasContent.innerHTML = '<p style="color: #dc3545;">Error al cargar las obras.</p>';
+        obrasContainer.style.display = 'block';
+    }
+});
+</script>
+{% endblock %}

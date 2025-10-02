@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Módulo Pagos - Constructora ICC{% endblock %}
+
+{% block content %}
+<div class="welcome">
+    <h2>Módulo de Pagos</h2>
+    <p>Gestión y administración de pagos de la constructora</p>
+</div>
+
+<div class="card">
+    <h3>Submódulos Disponibles</h3>
+    <div style="margin-top: 20px;">
+        <div style="background-color: #f8f9fa; padding: 15px; margin-bottom: 10px; border-radius: 5px; border-left: 4px solid #0066cc;">
+            <h4 style="margin: 0 0 10px 0; color: #0066cc;">
+                <a href="/pagos/planilla-principal" style="text-decoration: none; color: inherit;">
+                    📊 Planilla Principal
+                </a>
+            </h4>
+            <p style="margin: 0; color: #666; font-size: 14px;">
+                Genera y gestiona la planilla principal de pagos con datos de facturas y fechas personalizables.
+            </p>
+        </div>
+        
+        <div style="background-color: #fff3cd; padding: 15px; margin-bottom: 10px; border-radius: 5px; border-left: 4px solid #ffc107;">
+            <h4 style="margin: 0 0 10px 0; color: #856404;">
+                <a href="/pagos/cesiones" style="text-decoration: none; color: inherit;">
+                    📄 Cesiones
+                </a>
+            </h4>
+            <p style="margin: 0; color: #666; font-size: 14px;">
+                Procesa certificados SII desde archivos PDF y gestiona tabla de cesiones de forma interactiva.
+            </p>
+        </div>
+
+        <div style="background-color: #e8f5e8; padding: 15px; margin-bottom: 10px; border-radius: 5px; border-left: 4px solid #28a745;">
+            <h4 style="margin: 0 0 10px 0; color: #28a745;">
+                <a href="/pagos/planilla-preliminar" style="text-decoration: none; color: inherit;">
+                    📋 Planilla Preliminar
+                </a>
+            </h4>
+            <p style="margin: 0; color: #666; font-size: 14px;">
+                Resultado del cruce entre Planilla Principal y Cesiones. Tabla editable con funciones de agregar, eliminar y modificar filas.
+            </p>
+        </div>
+
+        <div style="background-color: #f8f1ff; padding: 15px; margin-bottom: 10px; border-radius: 5px; border-left: 4px solid #6f42c1;">
+            <h4 style="margin: 0 0 10px 0; color: #6f42c1;">
+                <a href="/pagos/cuentas-bancarias" style="text-decoration: none; color: inherit;">
+                    🏦 Cuentas Bancarias
+                </a>
+            </h4>
+            <p style="margin: 0; color: #666; font-size: 14px;">
+                Gestión de cuentas bancarias con carga desde Excel. Tabla editable que se cruzará con la Planilla Preliminar.
+            </p>
+        </div>
+
+        <div style="background-color: #e8f6f3; padding: 15px; margin-bottom: 10px; border-radius: 5px; border-left: 4px solid #20b2aa;">
+            <h4 style="margin: 0 0 10px 0; color: #20b2aa;">
+                <a href="/pagos/planilla-pagos" style="text-decoration: none; color: inherit;">
+                    💳 Planilla de Pagos
+                </a>
+            </h4>
+            <p style="margin: 0; color: #666; font-size: 14px;">
+                Genera la planilla de pagos final utilizando la función crear_planilla_pagos(). Muestra los datos de pagos_mostrar.xlsx con tabla editable y permite descargar planilla_pagos_santander.xlsx.
+            </p>
+        </div>
+
+    </div>
+</div>
+
+<div class="card">
+    <h3>Próximamente</h3>
+    <p style="color: #666; font-style: italic;">Más submódulos de pagos estarán disponibles próximamente.</p>
+</div>
+
+<div style="margin-top: 30px;">
+    <a href="/dashboard" class="btn" style="background-color: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">
+        ← Volver al Dashboard
+    </a>
+</div>
+{% endblock %}

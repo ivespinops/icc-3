@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Test Pagos - Constructora ICC{% endblock %}
+
+{% block content %}
+<div class="welcome">
+    <h2>Test Módulo Pagos</h2>
+    <p>Esta es una página de prueba para verificar que el módulo de pagos funciona.</p>
+</div>
+
+<div class="card">
+    <h3>Estado del Módulo</h3>
+    <p>✅ El módulo de Pagos está funcionando correctamente.</p>
+    <p>✅ La navegación lateral funciona.</p>
+    <p>✅ Los templates se cargan correctamente.</p>
+</div>
+
+<div class="card">
+    <h3>Prueba de Formulario</h3>
+    <form id="testForm">
+        <div style="margin-bottom: 15px;">
+            <label for="testDate" style="display: block; margin-bottom: 5px;">Fecha de prueba:</label>
+            <input type="date" id="testDate" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+        </div>
+        <button type="button" onclick="alert('Formulario funciona!')" style="background-color: #0066cc; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer;">
+            Probar
+        </button>
+    </form>
+</div>
+
+<div style="margin-top: 20px;">
+    <a href="/pagos" style="background-color: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">
+        ← Volver a Pagos
+    </a>
+</div>
+{% endblock %}

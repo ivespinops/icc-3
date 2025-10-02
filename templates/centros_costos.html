@@ -1,0 +1,351 @@
+{% extends "base.html" %}
+
+{% block title %}Centros de Costos - Constructora ICC{% endblock %}
+
+{% block content %}
+<div class="centros-container">
+    <div class="header">
+        <h1>🏢 Gestión de Centros de Costos</h1>
+    </div>
+
+    <div class="table-controls">
+        <div class="table-actions">
+            <button id="addRowBtn" class="btn btn-success">➕ Agregar Fila</button>
+            <button id="saveBtn" class="btn btn-primary">💾 Guardar</button>
+        </div>
+    </div>
+    
+    <div class="table-container">
+        <div id="tableContainer">
+            <div class="loading">Cargando datos...</div>
+        </div>
+    </div>
+    
+    <div id="messageContainer" class="message-container" style="display: none;">
+        <div id="messageContent" class="message-content"></div>
+    </div>
+</div>
+
+<style>
+.centros-container {
+    padding: 20px;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.header h1 {
+    margin: 0;
+    color: #ffffff;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.table-controls {
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.table-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: #0056b3;
+}
+
+.btn-success {
+    background-color: #28a745;
+    color: white;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+}
+
+.table-container {
+    overflow: auto;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    max-height: 70vh;
+    max-width: 100%;
+}
+
+.table-container::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+.table-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 6px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 6px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+.editable-table {
+    width: 100%;
+    min-width: 800px;
+    border-collapse: collapse;
+    background-color: #2d3436;
+    color: #ddd;
+}
+
+.editable-table th,
+.editable-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #636e72;
+    white-space: nowrap;
+}
+
+.editable-table th {
+    background-color: #1a1d1f;
+    color: #fff;
+    font-weight: bold;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 2px solid #495057;
+}
+
+.editable-table tbody tr:hover {
+    background-color: #3a3f42 !important;
+}
+
+.editable-table input {
+    border: none;
+    background: transparent;
+    width: 100%;
+    padding: 4px;
+    color: #ddd;
+}
+
+.editable-table input:focus {
+    outline: 2px solid #007bff;
+    background-color: #3a3f42;
+}
+
+.delete-btn {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.delete-btn:hover {
+    background-color: #c82333;
+}
+
+.loading {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+}
+
+.message-container {
+    margin-bottom: 20px;
+    padding: 0;
+}
+
+.message-content {
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    border-left: 4px solid;
+}
+
+.message-success {
+    background-color: #d4edda;
+    color: #155724;
+    border-left-color: #28a745;
+}
+
+.message-error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border-left-color: #dc3545;
+}
+
+.message-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border-left-color: #17a2b8;
+}
+</style>
+
+<script>
+let tableData = [];
+let tableColumns = [];
+
+async function loadData() {
+    try {
+        const response = await fetch('/api/centros-costos');
+        if (!response.ok) {
+            throw new Error('Error al cargar los datos');
+        }
+        
+        const result = await response.json();
+        tableData = result.data;
+        tableColumns = result.columns;
+        
+        renderTable();
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showMessage('Error al cargar los datos: ' + error.message, 'error');
+    }
+}
+
+function renderTable() {
+    const container = document.getElementById('tableContainer');
+    
+    if (tableData.length === 0 || tableColumns.length === 0) {
+        container.innerHTML = '<div class="loading">No hay datos disponibles</div>';
+        return;
+    }
+    
+    let html = '<table class="editable-table"><thead><tr>';
+    
+    // Encabezados
+    tableColumns.forEach(column => {
+        html += `<th>${column}</th>`;
+    });
+    html += '<th>Acciones</th></tr></thead><tbody>';
+    
+    // Filas de datos
+    tableData.forEach((row, rowIndex) => {
+        html += '<tr>';
+        tableColumns.forEach(column => {
+            const value = row[column] || '';
+            const isIntegerField = ['Orden', 'Centro de Costo Previred'].includes(column);
+            const inputType = isIntegerField ? 'number' : 'text';
+            const inputAttributes = isIntegerField ? 'step="1" min="0"' : '';
+            html += `<td><input type="${inputType}" ${inputAttributes} value="${value}" onchange="updateCell(${rowIndex}, '${column}', this.value)"></td>`;
+        });
+        html += `<td><button class="delete-btn" onclick="deleteRow(${rowIndex})">🗑️ Eliminar</button></td>`;
+        html += '</tr>';
+    });
+    
+    html += '</tbody></table>';
+    container.innerHTML = html;
+}
+
+function updateCell(rowIndex, column, value) {
+    if (tableData[rowIndex]) {
+        // Validar campos enteros
+        if (['Orden', 'Centro de Costo Previred'].includes(column)) {
+            // Convertir a entero, si no es válido usar 0
+            const intValue = parseInt(value);
+            tableData[rowIndex][column] = isNaN(intValue) ? 0 : intValue;
+        } else {
+            tableData[rowIndex][column] = value;
+        }
+    }
+}
+
+function addRow() {
+    const newRow = {};
+    tableColumns.forEach(column => {
+        // Asignar valores por defecto apropiados para campos enteros
+        if (['Orden', 'Centro de Costo Previred'].includes(column)) {
+            newRow[column] = 0;
+        } else {
+            newRow[column] = '';
+        }
+    });
+    tableData.push(newRow);
+    renderTable();
+}
+
+function deleteRow(rowIndex) {
+    if (confirm('¿Estás seguro de que quieres eliminar esta fila?')) {
+        tableData.splice(rowIndex, 1);
+        renderTable();
+    }
+}
+
+async function saveData() {
+    if (tableData.length === 0) {
+        showMessage('No hay datos para guardar', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/centros-costos/guardar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ data: tableData })
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Error al guardar');
+        }
+        
+        const result = await response.json();
+        showMessage(result.message, 'success');
+        
+    } catch (error) {
+        console.error('Error:', error);
+        showMessage('Error al guardar: ' + error.message, 'error');
+    }
+}
+
+function showMessage(text, type) {
+    const container = document.getElementById('messageContainer');
+    const content = document.getElementById('messageContent');
+    
+    content.textContent = text;
+    content.className = `message-content message-${type}`;
+    container.style.display = 'block';
+    
+    setTimeout(() => {
+        container.style.display = 'none';
+    }, 5000);
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    loadData();
+    
+    document.getElementById('addRowBtn').addEventListener('click', addRow);
+    document.getElementById('saveBtn').addEventListener('click', saveData);
+});
+</script>
+{% endblock %}

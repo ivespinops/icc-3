@@ -1,0 +1,432 @@
+{% extends "base.html" %}
+
+{% block title %}Cesiones - Constructora ICC{% endblock %}
+
+{% block content %}
+<div class="welcome">
+    <h2>Cesiones</h2>
+    <p>Procesa certificados SII desde archivos PDF y gestiona tabla de cesiones</p>
+</div>
+
+<!-- Formulario de Carga de PDF -->
+<div class="card">
+    <h3>Procesar Certificados SII</h3>
+    <form id="formPdf" enctype="multipart/form-data" style="margin-bottom: 20px;">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="pdfFile">Seleccionar archivo PDF:</label>
+                <input type="file" id="pdfFile" name="pdf_file" accept=".pdf" required class="form-control">
+            </div>
+            <div class="form-group">
+                <button type="submit" id="btnProcesar" class="btn btn-primary">
+                    📄 Procesar PDF
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<style>
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 150px;
+    gap: 15px;
+    align-items: end;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #333;
+}
+
+.form-control {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #0066cc;
+    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
+}
+
+.btn {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    transition: background-color 0.2s;
+}
+
+.btn-primary {
+    background-color: #0066cc;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #0052a3;
+}
+
+.btn-primary:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+}
+</style>
+
+<!-- Área de Resultados -->
+<div id="resultadosCesiones" style="display: none;">
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3>Tabla de Cesiones</h3>
+            <div>
+                <button id="btnGuardar" 
+                        style="background-color: #28a745; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; margin-right: 10px;">
+                    💾 Guardar
+                </button>
+                <button id="btnAgregarFila" 
+                        style="background-color: #17a2b8; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">
+                    ➕ Agregar Fila
+                </button>
+            </div>
+        </div>
+        
+        <div style="background-color: #2d2d2d; color: #e0e0e0; padding: 10px; border-radius: 4px; margin-bottom: 15px; border: 1px solid #404040;">
+            <span id="infoRegistros">Total de registros: 0</span>
+        </div>
+        
+        <!-- Tabla Editable -->
+        <div style="overflow-x: auto; max-height: 600px; border: 1px solid #404040; background-color: #1a1a1a; border-radius: 4px;">
+            <table id="tablaCesiones" style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                <thead id="theadCesiones" style="background-color: #2d2d2d; position: sticky; top: 0; z-index: 10;">
+                </thead>
+                <tbody id="tbodyCesiones">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Spinner -->
+<div id="loading" style="display: none; text-align: center; padding: 50px; background-color: #1a1a1a; border-radius: 4px; border: 1px solid #404040; margin: 20px 0;">
+    <div style="border: 4px solid #404040; border-top: 4px solid #0066cc; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin: 0 auto 20px;"></div>
+    <p style="color: #e0e0e0; margin: 0;">Procesando archivo PDF...</p>
+</div>
+
+<div style="margin-top: 30px;">
+    <a href="/pagos" class="btn" style="background-color: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">
+        ← Volver a Pagos
+    </a>
+</div>
+
+<style>
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.editable {
+    background-color: #2a2a2a;
+    color: #e0e0e0;
+    border: 1px solid transparent;
+    padding: 5px;
+    min-width: 80px;
+    min-height: 20px;
+}
+
+.editable:focus {
+    background-color: #1e3a8a;
+    border: 1px solid #3b82f6;
+    outline: none;
+    color: #ffffff;
+}
+
+.btn-delete {
+    background-color: #dc2626;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.2s;
+}
+
+.btn-delete:hover {
+    background-color: #b91c1c;
+}
+
+#tablaCesiones {
+    background-color: #1a1a1a;
+    color: #e0e0e0;
+}
+
+#tablaCesiones th, #tablaCesiones td {
+    padding: 8px;
+    text-align: left;
+    border: 1px solid #404040;
+    color: #e0e0e0;
+}
+
+#tablaCesiones th {
+    background-color: #2d2d2d;
+    color: #ffffff;
+    font-weight: bold;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+#tablaCesiones tr:nth-child(even) {
+    background-color: #252525;
+}
+
+#tablaCesiones tr:nth-child(odd) {
+    background-color: #1e1e1e;
+}
+
+#tablaCesiones tr:hover {
+    background-color: #333333;
+}
+
+#tablaCesiones tr:hover .editable {
+    background-color: #333333;
+}
+</style>
+
+<script>
+let datosActuales = [];
+let columnasActuales = [];
+
+document.getElementById('formPdf').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const pdfFile = document.getElementById('pdfFile').files[0];
+    
+    if (!pdfFile) {
+        alert('Por favor selecciona un archivo PDF');
+        return;
+    }
+    
+    await procesarPdf(pdfFile);
+});
+
+async function procesarPdf(pdfFile) {
+    const loading = document.getElementById('loading');
+    const resultados = document.getElementById('resultadosCesiones');
+    const btnProcesar = document.getElementById('btnProcesar');
+    
+    loading.style.display = 'block';
+    resultados.style.display = 'none';
+    btnProcesar.disabled = true;
+    btnProcesar.textContent = 'Procesando...';
+    
+    try {
+        const formData = new FormData();
+        formData.append('pdf_file', pdfFile);
+        
+        const response = await fetch('/api/pagos/cesiones/procesar', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            datosActuales = data.data;
+            columnasActuales = data.columns;
+            
+            mostrarTabla(data.data, data.columns);
+            document.getElementById('infoRegistros').textContent = `Total de registros: ${data.total_records}`;
+            
+            resultados.style.display = 'block';
+            
+            if (data.message) {
+                alert(data.message);
+            }
+        } else {
+            throw new Error(data.message || 'Error al procesar el PDF');
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al procesar el PDF: ' + error.message);
+    } finally {
+        loading.style.display = 'none';
+        btnProcesar.disabled = false;
+        btnProcesar.textContent = '📄 Procesar PDF';
+    }
+}
+
+function mostrarTabla(data, columns) {
+    const thead = document.getElementById('theadCesiones');
+    const tbody = document.getElementById('tbodyCesiones');
+    
+    // Limpiar tabla
+    thead.innerHTML = '';
+    tbody.innerHTML = '';
+    
+    // Crear header
+    const headerRow = document.createElement('tr');
+    columns.forEach(column => {
+        const th = document.createElement('th');
+        th.textContent = column;
+        headerRow.appendChild(th);
+    });
+    
+    // Agregar columna de acciones
+    const thAcciones = document.createElement('th');
+    thAcciones.textContent = 'Acciones';
+    thAcciones.style.width = '100px';
+    headerRow.appendChild(thAcciones);
+    
+    thead.appendChild(headerRow);
+    
+    // Crear filas de datos
+    data.forEach((row, index) => {
+        agregarFilaTabla(row, columns, index);
+    });
+}
+
+function agregarFilaTabla(rowData, columns, index) {
+    const tbody = document.getElementById('tbodyCesiones');
+    const tr = document.createElement('tr');
+    tr.setAttribute('data-index', index);
+    
+    columns.forEach(column => {
+        const td = document.createElement('td');
+        td.className = 'editable';
+        td.contentEditable = 'true';
+        td.textContent = rowData[column] || '';
+        td.setAttribute('data-column', column);
+        
+        // Agregar evento para actualizar datos
+        td.addEventListener('blur', function() {
+            const currentIndex = parseInt(tr.getAttribute('data-index'));
+            const columnName = this.getAttribute('data-column');
+            if (datosActuales[currentIndex]) {
+                datosActuales[currentIndex][columnName] = this.textContent;
+            }
+        });
+        
+        tr.appendChild(td);
+    });
+    
+    // Agregar columna de acciones
+    const tdAcciones = document.createElement('td');
+    const btnEliminar = document.createElement('button');
+    btnEliminar.textContent = '🗑️';
+    btnEliminar.className = 'btn-delete';
+    btnEliminar.title = 'Eliminar fila';
+    btnEliminar.addEventListener('click', () => eliminarFila(index));
+    
+    tdAcciones.appendChild(btnEliminar);
+    tr.appendChild(tdAcciones);
+    
+    tbody.appendChild(tr);
+}
+
+function eliminarFila(index) {
+    if (confirm('¿Estás seguro de que deseas eliminar esta fila?')) {
+        // Eliminar del array de datos
+        datosActuales.splice(index, 1);
+        
+        // Regenerar tabla
+        mostrarTabla(datosActuales, columnasActuales);
+        
+        // Actualizar contador
+        document.getElementById('infoRegistros').textContent = `Total de registros: ${datosActuales.length}`;
+    }
+}
+
+document.getElementById('btnAgregarFila').addEventListener('click', function() {
+    if (columnasActuales.length === 0) {
+        alert('Primero procesa un archivo PDF para poder agregar filas');
+        return;
+    }
+    
+    // Crear fila vacía
+    const nuevaFila = {};
+    columnasActuales.forEach(column => {
+        nuevaFila[column] = '';
+    });
+    
+    datosActuales.push(nuevaFila);
+    
+    // Regenerar tabla
+    mostrarTabla(datosActuales, columnasActuales);
+    
+    // Actualizar contador
+    document.getElementById('infoRegistros').textContent = `Total de registros: ${datosActuales.length}`;
+});
+
+document.getElementById('btnGuardar').addEventListener('click', async function() {
+    if (datosActuales.length === 0) {
+        alert('No hay datos para guardar');
+        return;
+    }
+    
+    const btnGuardar = this;
+    const textoOriginal = btnGuardar.textContent;
+    
+    btnGuardar.disabled = true;
+    btnGuardar.textContent = 'Guardando...';
+    
+    try {
+        const response = await fetch('/api/pagos/cesiones/guardar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                data: datosActuales
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Error: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('Cesiones guardadas exitosamente');
+        } else {
+            throw new Error(result.message || 'Error al guardar');
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al guardar las cesiones: ' + error.message);
+    } finally {
+        btnGuardar.disabled = false;
+        btnGuardar.textContent = textoOriginal;
+    }
+});
+</script>
+{% endblock %}

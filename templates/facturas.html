@@ -1,0 +1,892 @@
+{% extends "base.html" %}
+
+{% block title %}Facturas - Constructora ICC{% endblock %}
+
+{% block content %}
+<div class="facturas-container">
+    <div class="header">
+        <h1>Gestión de Facturas</h1>
+        <div class="header-buttons">
+            <button id="exportarExcel" class="btn btn-success">
+                📊 Exportar a Excel
+            </button>
+            <button id="subirKame" class="btn btn-primary" disabled>
+                Enviar a Kame
+            </button>
+            <button id="borrarFacturas" class="btn btn-danger" disabled>
+                🗑️ Borrar
+            </button>
+        </div>
+    </div>
+
+    <div id="messageContainer" class="message-container" style="display: none;">
+        <div id="messageContent" class="message-content"></div>
+    </div>
+
+    <div class="filters-container">
+        <div class="filters-grid">
+            <div class="filter-group">
+                <label for="tipoFactura">Tipo:</label>
+                <select id="tipoFactura" class="filter-select">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="fechaInicio">Fecha Inicio:</label>
+                <input type="date" id="fechaInicio" class="filter-input">
+            </div>
+            <div class="filter-group">
+                <label for="fechaFin">Fecha Fin:</label>
+                <input type="date" id="fechaFin" class="filter-input">
+            </div>
+            <div class="filter-group">
+                <label for="estadoDoc">Estado:</label>
+                <select id="estadoDoc" class="filter-select">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="ConceptoCompras">Concepto Compras:</label>
+                <select id="ConceptoCompras" class="filter-select">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="Cuenta2">Cuenta:</label>
+                <select id="Cuenta2" class="filter-select">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="Centro">ID Centro de Costo:</label>
+                <select id="Centro" class="filter-select">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="UnidadNegocio">Centro Costo KAME:</label>
+                <select id="UnidadNegocio" class="filter-select">
+                    <option value="">Todos</option>
+                </select>
+            </div>
+        </div>
+        <button id="clearFilters" class="btn btn-secondary">Limpiar Filtros</button>
+    </div>
+
+    <div class="table-controls">
+        <div class="selection-controls">
+            <label class="checkbox-container">
+                <input type="checkbox" id="selectAll">
+                <span class="checkmark"></span>
+                Seleccionar Todo
+            </label>
+            <span id="selectedCount">0 seleccionadas</span>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table id="facturasTable" class="facturas-table">
+            <thead>
+                <tr id="tableHeader">
+                    <th>
+                        <input type="checkbox" id="headerCheckbox">
+                    </th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <tr>
+                    <td colspan="100%" class="loading">Cargando facturas...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+.facturas-container {
+    padding: 20px;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.header-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.header h1 {
+    margin: 0;
+    color: #ffffff;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: #0056b3;
+}
+
+.btn-primary:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #545b62;
+}
+
+.btn-success {
+    background-color: #28a745;
+    color: white;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+}
+
+.filters-container {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #2a2a2a;
+    border-radius: 5px;
+    border: 1px solid #444;
+}
+
+.filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-group label {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #e0e0e0;
+}
+
+.filter-select, .filter-input {
+    padding: 8px;
+    border: 1px solid #555;
+    border-radius: 3px;
+    font-size: 14px;
+    background-color: #1a1a1a;
+    color: #e0e0e0;
+}
+
+.table-controls {
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.selection-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.checkbox-container input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+#selectedCount {
+    color: #666;
+    font-size: 14px;
+}
+
+.table-container {
+    overflow: auto;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    max-height: 70vh;
+    max-width: 100%;
+}
+
+.table-container::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+.table-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 6px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 6px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+.facturas-table {
+    width: 100%;
+    min-width: 1200px;
+    border-collapse: collapse;
+    background-color: #2d3436;
+    color: #ddd;
+}
+
+.facturas-table th,
+.facturas-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #636e72;
+    white-space: nowrap;
+}
+
+.facturas-table th {
+    background-color: #1a1d1f;
+    color: #fff;
+    font-weight: bold;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    border-bottom: 2px solid #495057;
+}
+
+.facturas-table tbody tr:hover {
+    background-color: #3a3f42 !important;
+}
+
+.row-pendiente {
+    background-color: #fff8e1 !important;
+    border-left: 3px solid #ffc107;
+}
+
+.row-pagada {
+    background-color: #e8f5e8 !important;
+    border-left: 3px solid #28a745;
+}
+
+.row-rechazada {
+    background-color: #ffeaea !important;
+    border-left: 3px solid #dc3545;
+}
+
+.row-sin-cuenta {
+    background-color: #8b1538 !important;
+    color: #fff !important;
+    border-left: 5px solid #dc3545;
+    border-right: 5px solid #dc3545;
+}
+
+.loading {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+}
+
+.error {
+    text-align: center;
+    padding: 40px;
+    color: #dc3545;
+}
+
+.message-container {
+    margin-bottom: 20px;
+    padding: 0;
+}
+
+.message-content {
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    border-left: 4px solid;
+}
+
+.message-success {
+    background-color: #d4edda;
+    color: #155724;
+    border-left-color: #28a745;
+}
+
+.message-error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border-left-color: #dc3545;
+}
+
+.message-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border-left-color: #17a2b8;
+}
+
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.loading-content {
+    background-color: white;
+    padding: 30px;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #007bff;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 15px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+
+<script>
+let facturasData = [];
+let filteredData = [];
+let allColumns = [];
+let selectedRows = new Set();
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadFacturas();
+    setupEventListeners();
+});
+
+function setupEventListeners() {
+    document.getElementById('selectAll').addEventListener('change', handleSelectAll);
+    document.getElementById('headerCheckbox').addEventListener('change', handleSelectAll);
+    document.getElementById('clearFilters').addEventListener('click', clearAllFilters);
+    document.getElementById('subirKame').addEventListener('click', handleSubirKame);
+    document.getElementById('exportarExcel').addEventListener('click', handleExportarExcel);
+    document.getElementById('borrarFacturas').addEventListener('click', handleBorrarFacturas);
+    
+    // Filter event listeners
+    document.getElementById('tipoFactura').addEventListener('change', applyFilters);
+    document.getElementById('fechaInicio').addEventListener('change', applyFilters);
+    document.getElementById('fechaFin').addEventListener('change', applyFilters);
+    document.getElementById('estadoDoc').addEventListener('change', applyFilters);
+    document.getElementById('ConceptoCompras').addEventListener('change', applyFilters);
+    document.getElementById('Cuenta2').addEventListener('change', applyFilters);
+    document.getElementById('Centro').addEventListener('change', applyFilters);
+    document.getElementById('UnidadNegocio').addEventListener('change', applyFilters);
+}
+
+async function loadFacturas() {
+    try {
+        const response = await fetch('/api/facturas');
+        if (!response.ok) {
+            throw new Error('Error al cargar las facturas');
+        }
+        
+        const result = await response.json();
+        facturasData = result.data;
+        allColumns = result.columns;
+        
+        populateFilterOptions();
+        createTableHeaders();
+        filteredData = [...facturasData];
+        renderTable();
+        
+    } catch (error) {
+        document.getElementById('tableBody').innerHTML = 
+            '<tr><td colspan="100%" class="error">Error al cargar las facturas: ' + error.message + '</td></tr>';
+    }
+}
+
+function populateFilterOptions() {
+    const filterMappings = {
+        'tipoFactura': 'tipoFactura',
+        'estadoDoc': 'estadoDoc',
+        'ConceptoCompras': 'ConceptoCompras',
+        'Cuenta2': 'Cuenta 2',
+        'Centro': 'Centro',
+        'UnidadNegocio': 'Unidad de Negocio'
+    };
+    
+    Object.entries(filterMappings).forEach(([selectId, columnName]) => {
+        const select = document.getElementById(selectId);
+        const uniqueValues = [...new Set(facturasData.map(row => row[columnName]).filter(val => val))].sort();
+        
+        select.innerHTML = '<option value="">Todos</option>';
+        
+        // Agregar opción especial para cuentas vacías
+        if (selectId === 'Cuenta2') {
+            const emptyOption = document.createElement('option');
+            emptyOption.value = '__EMPTY__';
+            emptyOption.textContent = 'Cuentas vacías';
+            select.appendChild(emptyOption);
+        }
+        
+        uniqueValues.forEach(value => {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = value;
+            select.appendChild(option);
+        });
+    });
+}
+
+function createTableHeaders() {
+    const headerRow = document.getElementById('tableHeader');
+    headerRow.innerHTML = '<th><input type="checkbox" id="headerCheckbox"></th>';
+    
+    allColumns.forEach(col => {
+        const th = document.createElement('th');
+        th.textContent = col.display;
+        headerRow.appendChild(th);
+    });
+    
+    document.getElementById('headerCheckbox').addEventListener('change', handleSelectAll);
+}
+
+function renderTable() {
+    const tbody = document.getElementById('tableBody');
+    tbody.innerHTML = '';
+    
+    if (filteredData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="100%" class="loading">No hay facturas que coincidan con los filtros</td></tr>';
+        return;
+    }
+    
+    filteredData.forEach((row, index) => {
+        const tr = document.createElement('tr');
+        tr.dataset.index = index;
+        
+        // Apply row styling based on estadoDoc and Cuenta
+        const estadoDoc = row.estadoDoc || '';
+        const cuenta = row['Cuenta 2'] || row['Cuenta'] || '';
+        
+        if (!cuenta || cuenta.trim() === '') {
+            tr.classList.add('row-sin-cuenta');
+        } else if (estadoDoc.toLowerCase().includes('pendiente')) {
+            tr.classList.add('row-pendiente');
+        } else if (estadoDoc.toLowerCase().includes('pagada')) {
+            tr.classList.add('row-pagada');
+        } else if (estadoDoc.toLowerCase().includes('rechazada') || estadoDoc.toLowerCase().includes('rechaz')) {
+            tr.classList.add('row-rechazada');
+        }
+        
+        // Checkbox cell
+        const checkboxTd = document.createElement('td');
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = index;
+        checkbox.addEventListener('change', handleRowSelection);
+        checkboxTd.appendChild(checkbox);
+        tr.appendChild(checkboxTd);
+        
+        // Data cells
+        allColumns.forEach(col => {
+            const td = document.createElement('td');
+            td.textContent = row[col.original] || '';
+            tr.appendChild(td);
+        });
+        
+        tbody.appendChild(tr);
+    });
+    
+    updateSelectedCount();
+    updateSubirKameButton();
+}
+
+function handleSelectAll(e) {
+    const isChecked = e.target.checked;
+    const checkboxes = document.querySelectorAll('#tableBody input[type="checkbox"]');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = isChecked;
+        if (isChecked) {
+            selectedRows.add(parseInt(checkbox.value));
+        } else {
+            selectedRows.delete(parseInt(checkbox.value));
+        }
+    });
+    
+    updateSelectedCount();
+    updateSubirKameButton();
+}
+
+function handleRowSelection(e) {
+    const index = parseInt(e.target.value);
+    if (e.target.checked) {
+        selectedRows.add(index);
+    } else {
+        selectedRows.delete(index);
+    }
+    
+    updateSelectAllCheckbox();
+    updateSelectedCount();
+    updateSubirKameButton();
+}
+
+function updateSelectAllCheckbox() {
+    const allCheckboxes = document.querySelectorAll('#tableBody input[type="checkbox"]');
+    const checkedCheckboxes = document.querySelectorAll('#tableBody input[type="checkbox"]:checked');
+    const headerCheckbox = document.getElementById('headerCheckbox');
+    
+    if (checkedCheckboxes.length === 0) {
+        headerCheckbox.indeterminate = false;
+        headerCheckbox.checked = false;
+    } else if (checkedCheckboxes.length === allCheckboxes.length) {
+        headerCheckbox.indeterminate = false;
+        headerCheckbox.checked = true;
+    } else {
+        headerCheckbox.indeterminate = true;
+    }
+}
+
+function updateSelectedCount() {
+    document.getElementById('selectedCount').textContent = selectedRows.size + ' seleccionadas';
+}
+
+function updateSubirKameButton() {
+    const button = document.getElementById('subirKame');
+    button.disabled = selectedRows.size === 0;
+
+    // También actualizar el botón de borrar
+    const borrarBtn = document.getElementById('borrarFacturas');
+    if (borrarBtn) {
+        borrarBtn.disabled = selectedRows.size === 0;
+    }
+}
+
+function applyFilters() {
+    const filters = {
+        tipoFactura: document.getElementById('tipoFactura').value,
+        fechaInicio: document.getElementById('fechaInicio').value,
+        fechaFin: document.getElementById('fechaFin').value,
+        estadoDoc: document.getElementById('estadoDoc').value,
+        ConceptoCompras: document.getElementById('ConceptoCompras').value,
+        Cuenta2: document.getElementById('Cuenta2').value,
+        Centro: document.getElementById('Centro').value,
+        UnidadNegocio: document.getElementById('UnidadNegocio').value
+    };
+    
+    filteredData = facturasData.filter(row => {
+        // Verificar filtros generales
+        const generalFiltersMatch = Object.entries(filters).every(([key, value]) => {
+            if (!value || key === 'fechaInicio' || key === 'fechaFin') return true;
+            
+            let columnName = key;
+            if (key === 'Cuenta2') columnName = 'Cuenta 2';
+            if (key === 'UnidadNegocio') columnName = 'Unidad de Negocio';
+            
+            // Manejar filtro especial para cuentas vacías
+            if (key === 'Cuenta2' && value === '__EMPTY__') {
+                const cuenta = row[columnName] || '';
+                return cuenta.toString().trim() === '';
+            }
+            
+            const rowValue = row[columnName] || '';
+            return rowValue.toString().toLowerCase().includes(value.toLowerCase());
+        });
+        
+        if (!generalFiltersMatch) return false;
+        
+        // Verificar filtro de rango de fechas
+        const fechaInicio = filters.fechaInicio;
+        const fechaFin = filters.fechaFin;
+        
+        if (fechaInicio || fechaFin) {
+            const rowFecha = row['fechaEmision'] || row['Fecha Emisión'] || '';
+            if (!rowFecha) return false;
+            
+            // Convertir la fecha de la fila a formato comparable (YYYY-MM-DD)
+            let fechaComparable = '';
+            if (rowFecha.includes('/')) {
+                // Formato DD/MM/YYYY
+                const partes = rowFecha.split('/');
+                if (partes.length === 3) {
+                    fechaComparable = `${partes[2]}-${partes[1].padStart(2, '0')}-${partes[0].padStart(2, '0')}`;
+                }
+            } else if (rowFecha.includes('-')) {
+                // Ya está en formato YYYY-MM-DD o similar
+                fechaComparable = rowFecha;
+            }
+            
+            if (fechaComparable) {
+                if (fechaInicio && fechaComparable < fechaInicio) return false;
+                if (fechaFin && fechaComparable > fechaFin) return false;
+            }
+        }
+        
+        return true;
+    });
+    
+    selectedRows.clear();
+    renderTable();
+}
+
+async function handleBorrarFacturas() {
+    if (selectedRows.size === 0) {
+        showMessage('No hay facturas seleccionadas', 'error');
+        return;
+    }
+
+    if (!confirm('¿Estás seguro de que deseas borrar las facturas seleccionadas? Esta acción no se puede deshacer.')) {
+        return;
+    }
+
+    const selectedFacturas = Array.from(selectedRows).map(index => {
+        const factura = filteredData[index];
+        return parseInt(factura.idDocumento);
+    });
+
+    showLoadingOverlay();
+    clearMessages();
+
+    try {
+        const response = await fetch('/api/facturas/borrar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                idsBorrar: selectedFacturas
+            })
+        });
+
+        hideLoadingOverlay();
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Error al borrar facturas');
+        }
+
+        const result = await response.json();
+
+        showMessage(result.message || 'Facturas borradas exitosamente', 'success');
+
+        // Clear selections and reload table
+        selectedRows.clear();
+        await loadFacturas();
+
+    } catch (error) {
+        hideLoadingOverlay();
+        showMessage(`❌ Error al borrar facturas: ${error.message}`, 'error');
+    }
+}
+
+function clearAllFilters() {
+    document.getElementById('tipoFactura').value = '';
+    document.getElementById('fechaInicio').value = '';
+    document.getElementById('fechaFin').value = '';
+    document.getElementById('estadoDoc').value = '';
+    document.getElementById('ConceptoCompras').value = '';
+    document.getElementById('Cuenta2').value = '';
+    document.getElementById('Centro').value = '';
+    document.getElementById('UnidadNegocio').value = '';
+    
+    filteredData = [...facturasData];
+    selectedRows.clear();
+    renderTable();
+}
+
+async function handleSubirKame() {
+    if (selectedRows.size === 0) {
+        showMessage('No hay facturas seleccionadas', 'error');
+        return;
+    }
+
+    const selectedFacturas = Array.from(selectedRows).map(index => {
+        const factura = filteredData[index];
+        return {
+            idDocumento: parseInt(factura.idDocumento),
+            folioUnico: String(factura.folioUnico || ''),
+            nomProveedor: String(factura.nomProveedor || '')
+        };
+    });
+
+    showLoadingOverlay();
+    clearMessages();
+
+    try {
+        const response = await fetch('/api/subir-kame', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                facturas: selectedFacturas
+            })
+        });
+
+        hideLoadingOverlay();
+
+        if (!response.ok) {
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        
+        let messages = [];
+        result.results.forEach(item => {
+            if (item.success) {
+                messages.push(`✅ Factura ID ${item.idDocumento} enviada exitosamente.`);
+            } else {
+                messages.push(`❌ Error al enviar Factura ID ${item.idDocumento}: ${item.error}`);
+            }
+        });
+
+        showMessage(messages.join('<br>'), 'info');
+        
+        // Clear selections after successful operation
+        selectedRows.clear();
+        renderTable();
+
+    } catch (error) {
+        hideLoadingOverlay();
+        showMessage(`❌ Error al procesar las facturas: ${error.message}`, 'error');
+    }
+}
+
+function showMessage(message, type) {
+    const container = document.getElementById('messageContainer');
+    const content = document.getElementById('messageContent');
+    
+    content.innerHTML = message;
+    content.className = `message-content message-${type}`;
+    container.style.display = 'block';
+    
+    // Auto-hide success messages after 10 seconds
+    if (type === 'success') {
+        setTimeout(() => {
+            container.style.display = 'none';
+        }, 10000);
+    }
+}
+
+function clearMessages() {
+    const container = document.getElementById('messageContainer');
+    container.style.display = 'none';
+}
+
+function showLoadingOverlay() {
+    const overlay = document.createElement('div');
+    overlay.id = 'loadingOverlay';
+    overlay.className = 'loading-overlay';
+    overlay.innerHTML = `
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>Enviando facturas a Kame...</p>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+}
+
+function hideLoadingOverlay() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+        overlay.remove();
+    }
+}
+
+async function handleExportarExcel() {
+    const filters = {
+        tipoFactura: document.getElementById('tipoFactura').value,
+        fechaInicio: document.getElementById('fechaInicio').value,
+        fechaFin: document.getElementById('fechaFin').value,
+        estadoDoc: document.getElementById('estadoDoc').value,
+        ConceptoCompras: document.getElementById('ConceptoCompras').value,
+        Cuenta2: document.getElementById('Cuenta2').value,
+        Centro: document.getElementById('Centro').value,
+        UnidadNegocio: document.getElementById('UnidadNegocio').value
+    };
+
+    try {
+        showMessage('Preparando archivo Excel...', 'info');
+        
+        const response = await fetch('/api/exportar-excel', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(filters)
+        });
+
+        if (!response.ok) {
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+
+        // Crear elemento de descarga
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        
+        // Obtener nombre del archivo desde la respuesta
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = 'facturas.xlsx';
+        if (contentDisposition) {
+            const matches = contentDisposition.match(/filename="?([^"]+)"?/);
+            if (matches && matches[1]) {
+                filename = matches[1];
+            }
+        }
+        
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        
+        // Limpiar
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        showMessage(`✅ Archivo Excel descargado exitosamente: ${filename}`, 'success');
+        
+    } catch (error) {
+        showMessage(`❌ Error al descargar Excel: ${error.message}`, 'error');
+    }
+}
+</script>
+{% endblock %}

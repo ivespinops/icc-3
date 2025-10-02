@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Constructora ICC{% endblock %}
+
+{% block content %}
+<div class="welcome">
+    <h2>Bienvenido a Constructora ICC</h2>
+    <p>Hola, <strong>{{ user.name }}</strong>!</p>
+</div>
+
+<div class="card">
+    <h2>Panel de Control</h2>
+    <div class="user-info">
+        <p><strong>Usuario:</strong> {{ user.name }}</p>
+        <p><strong>Email:</strong> {{ user.email }}</p>
+        <p><strong>Nivel de acceso:</strong> {{ "Administrador" if user.is_admin else "Usuario" }}</p>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Módulos del Sistema</h3>
+    <p>• Gestión de <a href="/facturas" style="color: #0066cc;">Facturas</a></p>
+    <p>• Configurar <a href="/preparar-facturas" style="color: #0066cc;">Preparar Facturas</a></p>
+    <p>• Administrar <a href="/cuentas" style="color: #0066cc;">Cuentas</a></p>
+    <p>• Gestionar <a href="/centros-costos" style="color: #0066cc;">Centros de Costos</a></p>
+    <p>• Módulo de <a href="/pagos" style="color: #0066cc;">Pagos</a></p>
+    {% if user.is_admin or user.is_manager or user.is_admin_obra %}
+    <p>• Módulo de <a href="/obras" style="color: #0066cc;">Obras</a></p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h3>Acciones Disponibles</h3>
+    <p>• Actualizar tu perfil y contraseña en <a href="/profile" style="color: #0066cc;">Mi Perfil</a></p>
+    {% if user.is_admin %}
+    <p>• Gestionar usuarios del sistema en <a href="/admin/users" style="color: #0066cc;">Gestión de Usuarios</a></p>
+    {% endif %}
+</div>
+{% endblock %}

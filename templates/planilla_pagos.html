@@ -1,0 +1,499 @@
+{% extends "base.html" %}
+
+{% block title %}Planilla de Pagos - Constructora ICC{% endblock %}
+
+{% block content %}
+<div class="welcome">
+    <h2>Planilla de Pagos</h2>
+    <p>Genera la planilla de pagos final usando los datos de la Planilla Preliminar</p>
+</div>
+
+<!-- Sección de carga de datos -->
+<div class="card">
+    <h3>Generar Planilla de Pagos</h3>
+    <div style="display: flex; gap: 15px; align-items: end; flex-wrap: wrap;">
+        <button onclick="generarPlanillaPagos()" class="btn">📊 Generar Planilla de Pagos</button>
+        <button onclick="cargarArchivosExistentes()" class="btn" style="background-color: #6c757d;">📂 Cargar Archivos Existentes</button>
+        <button onclick="descargarPlanillaSantander()" class="btn" style="background-color: #e67e22;">📥 Descargar Planilla Santander</button>
+    </div>
+    <div style="margin-top: 10px; padding: 10px; background-color: #fff3cd; border-radius: 4px; border-left: 4px solid #ffc107;">
+        <p style="margin: 0; font-size: 14px; color: #856404;">
+            <strong>Nota:</strong> Esta función requiere que primero haya generado la <strong>Planilla Preliminar</strong>. 
+            Los datos mostrados corresponden a <code>pagos_mostrar.xlsx</code> y se puede descargar <code>planilla_pagos_santander.xlsx</code>.
+        </p>
+    </div>
+</div>
+
+<!-- Sección de la tabla -->
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h3 id="tituloTabla">Planilla de Pagos</h3>
+        <div>
+            <button onclick="agregarFila()" class="btn" style="background-color: #28a745;">➕ Agregar Fila</button>
+            <button onclick="eliminarFilasSeleccionadas()" class="btn" style="background-color: #dc3545;">🗑️ Eliminar Seleccionadas</button>
+            <button onclick="guardarPlanilla()" class="btn" style="background-color: #007bff;">💾 Guardar</button>
+        </div>
+    </div>
+    
+    <div id="tablaContainer" style="overflow-x: auto; max-height: 600px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;">
+        <table id="planillaPagosTable" style="width: 100%; border-collapse: collapse; background-color: #2d3748; color: white;">
+            <thead id="tablaHeader" style="background-color: #1a202c; position: sticky; top: 0; z-index: 10;">
+                <tr>
+                    <th style="padding: 12px; border: 1px solid #4a5568; text-align: left;">
+                        <input type="checkbox" id="selectAll" onchange="toggleSelectAll()" style="transform: scale(1.2);">
+                    </th>
+                    <!-- Las columnas se cargarán dinámicamente -->
+                </tr>
+            </thead>
+            <tbody id="tablaBody">
+                <tr>
+                    <td colspan="100%" style="padding: 40px; text-align: center; color: #a0aec0;">
+                        <div>
+                            <p style="font-size: 18px; margin: 0 0 10px 0;">💳 No hay planilla de pagos guardada</p>
+                            <p style="margin: 0; font-size: 14px;">Use el botón "Generar Planilla de Pagos" para crear una</p>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <div id="infoTabla" style="margin-top: 15px; color: #666; font-size: 14px; display: none;">
+        Total de registros: <span id="totalRegistros">0</span>
+    </div>
+</div>
+
+<!-- Volver al dashboard -->
+<div style="margin-top: 30px;">
+    <a href="/pagos" class="btn" style="background-color: #6c757d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">
+        ← Volver al Módulo Pagos
+    </a>
+</div>
+
+<script>
+let planillaData = [];
+let planillaColumns = [];
+let editingCell = null;
+
+async function generarPlanillaPagos() {
+    try {
+        mostrarCargando();
+        
+        const response = await fetch('/api/pagos/planilla-pagos', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Error al generar planilla de pagos');
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            planillaData = result.data;
+            planillaColumns = result.columns;
+            renderizarTabla();
+            mostrarMensaje('Planilla de pagos generada exitosamente', 'success');
+        } else {
+            mostrarMensaje(result.message || 'Error al generar planilla', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarMensaje('Error al generar planilla de pagos: ' + error.message, 'error');
+    } finally {
+        ocultarCargando();
+    }
+}
+
+async function cargarPlanillaExistente() {
+    try {
+        mostrarCargando();
+        
+        const response = await fetch('/api/pagos/planilla-pagos/cargar');
+        
+        if (!response.ok) {
+            throw new Error('Error al cargar planilla existente');
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            planillaData = result.data;
+            planillaColumns = result.columns;
+            renderizarTabla();
+        } else {
+            // Mostrar mensaje de no hay planilla pero sin alertar como error
+            document.getElementById('tablaBody').innerHTML = `
+                <tr>
+                    <td colspan="100%" style="padding: 40px; text-align: center; color: #a0aec0;">
+                        <div>
+                            <p style="font-size: 18px; margin: 0 0 10px 0;">💳 No hay planilla de pagos guardada</p>
+                            <p style="margin: 0; font-size: 14px;">Use el botón "Generar Planilla de Pagos" para crear una</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        // En caso de error, mostrar mensaje estándar sin planilla
+        document.getElementById('tablaBody').innerHTML = `
+            <tr>
+                <td colspan="100%" style="padding: 40px; text-align: center; color: #a0aec0;">
+                    <div>
+                        <p style="font-size: 18px; margin: 0 0 10px 0;">💳 No hay planilla de pagos guardada</p>
+                        <p style="margin: 0; font-size: 14px;">Use el botón "Generar Planilla de Pagos" para crear una</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+    } finally {
+        ocultarCargando();
+    }
+}
+
+async function cargarArchivosExistentes() {
+    await cargarPlanillaExistente();
+}
+
+async function descargarPlanillaSantander() {
+    try {
+        mostrarCargando();
+        
+        const response = await fetch('/api/pagos/planilla-pagos/descargar-santander');
+        
+        if (!response.ok) {
+            throw new Error('Error al descargar planilla Santander');
+        }
+        
+        // Obtener el archivo como blob
+        const blob = await response.blob();
+        
+        // Crear URL del blob
+        const url = window.URL.createObjectURL(blob);
+        
+        // Crear elemento de descarga temporal
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = 'planilla_pagos_santander.xlsx';
+        
+        document.body.appendChild(a);
+        a.click();
+        
+        // Limpiar
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        mostrarMensaje('Planilla Santander descargada exitosamente', 'success');
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarMensaje('Error al descargar planilla Santander: ' + error.message, 'error');
+    } finally {
+        ocultarCargando();
+    }
+}
+
+function renderizarTabla() {
+    const header = document.getElementById('tablaHeader');
+    const body = document.getElementById('tablaBody');
+    const infoTabla = document.getElementById('infoTabla');
+    
+    if (!planillaData.length) {
+        body.innerHTML = `
+            <tr>
+                <td colspan="100%" style="padding: 40px; text-align: center; color: #a0aec0;">
+                    <div>
+                        <p style="font-size: 18px; margin: 0 0 10px 0;">💳 No hay datos disponibles</p>
+                        <p style="margin: 0; font-size: 14px;">Use el botón "Generar Planilla de Pagos" para crear una</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+        infoTabla.style.display = 'none';
+        return;
+    }
+    
+    // Renderizar header
+    let headerHTML = `
+        <tr>
+            <th style="padding: 12px; border: 1px solid #4a5568; text-align: left; min-width: 50px;">
+                <input type="checkbox" id="selectAll" onchange="toggleSelectAll()" style="transform: scale(1.2);">
+            </th>
+    `;
+    
+    planillaColumns.forEach(col => {
+        headerHTML += `
+            <th style="padding: 12px; border: 1px solid #4a5568; text-align: left; min-width: 120px; background-color: #1a202c;">
+                ${col}
+            </th>
+        `;
+    });
+    
+    headerHTML += '</tr>';
+    header.innerHTML = headerHTML;
+    
+    // Renderizar body
+    let bodyHTML = '';
+    planillaData.forEach((row, index) => {
+        bodyHTML += `
+            <tr style="background-color: ${index % 2 === 0 ? '#2d3748' : '#4a5568'}; border-bottom: 1px solid #4a5568;">
+                <td style="padding: 8px; border: 1px solid #4a5568; text-align: center;">
+                    <input type="checkbox" class="row-select" data-index="${index}" style="transform: scale(1.1);">
+                </td>
+        `;
+        
+        planillaColumns.forEach((col, colIndex) => {
+            const value = row[col] || '';
+            bodyHTML += `
+                <td style="padding: 8px; border: 1px solid #4a5568; cursor: pointer; min-width: 120px;" 
+                    onclick="editCell(${index}, '${col}', this)">
+                    <div class="cell-content" style="min-height: 20px;">
+                        ${escapeHtml(String(value))}
+                    </div>
+                </td>
+            `;
+        });
+        
+        bodyHTML += '</tr>';
+    });
+    
+    body.innerHTML = bodyHTML;
+    
+    // Mostrar información de la tabla
+    document.getElementById('totalRegistros').textContent = planillaData.length;
+    infoTabla.style.display = 'block';
+}
+
+function editCell(rowIndex, column, cellElement) {
+    // Si ya hay una celda siendo editada, guardar los cambios
+    if (editingCell) {
+        finishEdit();
+    }
+    
+    const currentValue = planillaData[rowIndex][column] || '';
+    const cellContent = cellElement.querySelector('.cell-content');
+    
+    // Crear input de edición
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = currentValue;
+    input.style.width = '100%';
+    input.style.padding = '4px';
+    input.style.border = '2px solid #007bff';
+    input.style.borderRadius = '3px';
+    input.style.backgroundColor = '#fff';
+    input.style.color = '#000';
+    input.style.fontSize = '14px';
+    
+    // Reemplazar contenido
+    cellContent.innerHTML = '';
+    cellContent.appendChild(input);
+    input.focus();
+    input.select();
+    
+    // Guardar referencia de la celda siendo editada
+    editingCell = {
+        rowIndex,
+        column,
+        input,
+        cellContent,
+        originalValue: currentValue
+    };
+    
+    // Event listeners para guardar/cancelar
+    input.addEventListener('blur', finishEdit);
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            finishEdit();
+        } else if (e.key === 'Escape') {
+            cancelEdit();
+        }
+    });
+}
+
+function finishEdit() {
+    if (!editingCell) return;
+    
+    const newValue = editingCell.input.value.trim();
+    const { rowIndex, column, cellContent, originalValue } = editingCell;
+    
+    // Actualizar datos
+    planillaData[rowIndex][column] = newValue;
+    
+    // Actualizar vista
+    cellContent.innerHTML = escapeHtml(newValue);
+    
+    // Limpiar referencia
+    editingCell = null;
+    
+    console.log(`Celda actualizada: fila ${rowIndex}, columna ${column}, nuevo valor: ${newValue}`);
+}
+
+function cancelEdit() {
+    if (!editingCell) return;
+    
+    const { cellContent, originalValue } = editingCell;
+    
+    // Restaurar valor original
+    cellContent.innerHTML = escapeHtml(originalValue);
+    
+    // Limpiar referencia
+    editingCell = null;
+}
+
+function agregarFila() {
+    if (!planillaColumns.length) {
+        mostrarMensaje('No hay estructura de tabla definida. Genere una planilla primero.', 'warning');
+        return;
+    }
+    
+    // Crear nueva fila con valores vacíos
+    const nuevaFila = {};
+    planillaColumns.forEach(col => {
+        nuevaFila[col] = '';
+    });
+    
+    planillaData.push(nuevaFila);
+    renderizarTabla();
+    
+    mostrarMensaje('Nueva fila agregada', 'success');
+}
+
+function eliminarFilasSeleccionadas() {
+    const checkboxes = document.querySelectorAll('.row-select:checked');
+    
+    if (checkboxes.length === 0) {
+        mostrarMensaje('Seleccione las filas a eliminar', 'warning');
+        return;
+    }
+    
+    if (!confirm(`¿Está seguro de eliminar ${checkboxes.length} fila(s) seleccionada(s)?`)) {
+        return;
+    }
+    
+    // Obtener índices de filas seleccionadas (en orden descendente)
+    const indicesAEliminar = Array.from(checkboxes)
+        .map(cb => parseInt(cb.dataset.index))
+        .sort((a, b) => b - a);
+    
+    // Eliminar filas
+    indicesAEliminar.forEach(index => {
+        planillaData.splice(index, 1);
+    });
+    
+    renderizarTabla();
+    mostrarMensaje(`${indicesAEliminar.length} fila(s) eliminada(s)`, 'success');
+}
+
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.row-select');
+    
+    checkboxes.forEach(cb => {
+        cb.checked = selectAll.checked;
+    });
+}
+
+async function guardarPlanilla() {
+    if (!planillaData.length) {
+        mostrarMensaje('No hay datos para guardar', 'warning');
+        return;
+    }
+    
+    try {
+        mostrarCargando();
+        
+        const response = await fetch('/api/pagos/planilla-pagos/guardar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                data: planillaData,
+                columns: planillaColumns
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Error al guardar planilla');
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            mostrarMensaje('Planilla guardada exitosamente', 'success');
+        } else {
+            mostrarMensaje(result.message || 'Error al guardar', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarMensaje('Error al guardar planilla: ' + error.message, 'error');
+    } finally {
+        ocultarCargando();
+    }
+}
+
+// Funciones auxiliares
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function mostrarCargando() {
+    // Implementar overlay de carga si es necesario
+    console.log('Cargando...');
+}
+
+function ocultarCargando() {
+    console.log('Carga completada');
+}
+
+function mostrarMensaje(mensaje, tipo = 'info') {
+    // Crear elemento de mensaje
+    const messageDiv = document.createElement('div');
+    messageDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 4px;
+        color: white;
+        font-weight: 500;
+        z-index: 1000;
+        max-width: 400px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    `;
+    
+    // Colores según tipo
+    const colores = {
+        'success': '#28a745',
+        'error': '#dc3545',
+        'warning': '#ffc107',
+        'info': '#17a2b8'
+    };
+    
+    messageDiv.style.backgroundColor = colores[tipo] || colores.info;
+    messageDiv.textContent = mensaje;
+    
+    document.body.appendChild(messageDiv);
+    
+    // Eliminar después de 4 segundos
+    setTimeout(() => {
+        if (messageDiv.parentNode) {
+            messageDiv.parentNode.removeChild(messageDiv);
+        }
+    }, 4000);
+}
+
+// Inicialización
+document.addEventListener('DOMContentLoaded', function() {
+    // Cargar planilla existente automáticamente al cargar la página
+    cargarPlanillaExistente();
+});
+</script>
+{% endblock %}

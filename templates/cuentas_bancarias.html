@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuentas Bancarias - Constructora ICC</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .upload-section {
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .upload-section h3 {
+            margin-top: 0;
+            color: #ffffff;
+        }
+        .file-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .file-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        .upload-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .upload-btn:hover {
+            background-color: #0056b3;
+        }
+        .table-container {
+            overflow: auto;
+            border: 1px solid #444;
+            border-radius: 5px;
+            max-height: 70vh;
+            max-width: 100%;
+            background-color: #1a1a1a;
+            margin-top: 20px;
+        }
+        
+        .table-container::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+        
+        .table-container::-webkit-scrollbar-track {
+            background: #2a2a2a;
+            border-radius: 6px;
+        }
+        
+        .table-container::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 6px;
+        }
+        
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #777;
+        }
+        
+        .editable-table tbody tr:hover {
+            background-color: #2a2a2a !important;
+        }
+        .editable-table {
+            width: 100%;
+            min-width: 1200px;
+            border-collapse: collapse;
+            background-color: #1a1a1a;
+            color: #ffffff;
+            margin: 0;
+        }
+        .editable-table th,
+        .editable-table td {
+            border: 1px solid #333;
+            padding: 8px;
+            text-align: left;
+            min-width: 150px;
+            white-space: nowrap;
+        }
+        .editable-table th {
+            background-color: #2a2a2a;
+            font-weight: bold;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            color: #ffffff;
+        }
+        .editable-table input {
+            width: 100%;
+            border: 1px solid #444;
+            border-radius: 2px;
+            padding: 4px;
+            font-size: 14px;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+        .editable-table input:focus {
+            outline: 2px solid #007bff;
+            outline-offset: -2px;
+            background-color: #2a2a2a;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        .btn-success:hover {
+            background-color: #1e7e34;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        .row-controls {
+            display: flex;
+            gap: 5px;
+        }
+        .row-controls button {
+            padding: 2px 6px;
+            font-size: 12px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .delete-row {
+            background-color: #dc3545;
+            color: white;
+        }
+        .delete-row:hover {
+            background-color: #c82333;
+        }
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .message.success {
+            background-color: #2a5a3a;
+            color: #ffffff;
+            border: 1px solid #28a745;
+        }
+        .message.error {
+            background-color: #5a2a2a;
+            color: #ffffff;
+            border: 1px solid #dc3545;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    {% extends "base.html" %}
+    {% block content %}
+    <div class="container">
+        <div class="header-section">
+            <h1>Cuentas Bancarias</h1>
+            <p>Gestión de cuentas bancarias para pagos - Submódulo de Pagos</p>
+        </div>
+
+        <div class="upload-section">
+            <h3>📁 Cargar Archivo Santander.xlsx</h3>
+            <p style="color: #b0b0b0;">El sistema carga automáticamente el archivo desde el directorio persistente si existe, o desde la carpeta del proyecto.</p>
+            
+            <div class="file-input-wrapper">
+                <input type="file" id="santanderFile" class="file-input" accept=".xlsx,.xls" />
+                <button type="button" class="upload-btn" onclick="subirArchivo()">
+                    Subir Archivo
+                </button>
+            </div>
+            
+            <div id="uploadMessage"></div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn btn-primary" onclick="agregarFila()">
+                ➕ Agregar Registro
+            </button>
+            <button class="btn btn-success" onclick="guardarDatos()">
+                💾 Guardar Cambios
+            </button>
+            <button class="btn btn-primary" onclick="cargarDatos()">
+                🔄 Recargar Datos
+            </button>
+        </div>
+
+        <div id="message"></div>
+        <div id="loading" class="loading">
+            <p>Cargando datos...</p>
+        </div>
+
+        <div class="table-container">
+            <table id="cuentasTable" class="editable-table">
+                <thead id="tableHead">
+                </thead>
+                <tbody id="tableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let currentData = [];
+        let currentColumns = [];
+
+        // Cargar datos al inicio
+        document.addEventListener('DOMContentLoaded', function() {
+            cargarDatos();
+        });
+
+        async function cargarDatos() {
+            try {
+                showLoading(true);
+                const response = await fetch('/api/pagos/cuentas-bancarias');
+                const result = await response.json();
+                
+                if (response.ok) {
+                    currentData = result.data || [];
+                    currentColumns = result.columns || [];
+                    renderTable();
+                    showMessage('Datos cargados correctamente', 'success');
+                } else {
+                    throw new Error(result.detail || 'Error al cargar datos');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('Error al cargar datos: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function renderTable() {
+            const tableHead = document.getElementById('tableHead');
+            const tableBody = document.getElementById('tableBody');
+            
+            // Limpiar tabla
+            tableHead.innerHTML = '';
+            tableBody.innerHTML = '';
+            
+            if (currentColumns.length === 0) {
+                // Si no hay columnas, crear estructura básica
+                currentColumns = [
+                    'Nombre beneficiario\\n(obligatorio)',
+                    'RUT beneficiario\\n(obligatorio solo si banco destino no es Santander)',
+                    'Banco destino\\n(obligatorio)',
+                    'Tipo de cuenta destino\\n(obligatorio)',
+                    'Número de cuenta destino\\n(obligatorio)',
+                    'Correo beneficiario\\n(obligatorio)',
+                    'Monto transferencia\\n(obligatorio)',
+                    'Glosa personalizada transferencia\\n(opcional)',
+                    'Mensaje correo beneficiario\\n(opcional)'
+                ];
+            }
+            
+            // Crear encabezados
+            const headerRow = document.createElement('tr');
+            currentColumns.forEach(column => {
+                const th = document.createElement('th');
+                th.textContent = column.replace('\\n', ' ');
+                headerRow.appendChild(th);
+            });
+            
+            // Agregar columna de acciones
+            const actionTh = document.createElement('th');
+            actionTh.textContent = 'Acciones';
+            actionTh.style.width = '100px';
+            headerRow.appendChild(actionTh);
+            
+            tableHead.appendChild(headerRow);
+            
+            // Crear filas de datos
+            currentData.forEach((row, index) => {
+                addTableRow(row, index);
+            });
+            
+            // Si no hay datos, agregar una fila vacía
+            if (currentData.length === 0) {
+                agregarFila();
+            }
+        }
+
+        function addTableRow(rowData = {}, index = -1) {
+            const tableBody = document.getElementById('tableBody');
+            const tr = document.createElement('tr');
+            
+            currentColumns.forEach(column => {
+                const td = document.createElement('td');
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = rowData[column] || '';
+                input.addEventListener('input', function() {
+                    updateData(index === -1 ? currentData.length : index, column, this.value);
+                });
+                td.appendChild(input);
+                tr.appendChild(td);
+            });
+            
+            // Columna de acciones
+            const actionTd = document.createElement('td');
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = '🗑️';
+            deleteBtn.className = 'delete-row';
+            deleteBtn.onclick = function() {
+                eliminarFila(tr, index === -1 ? currentData.length : index);
+            };
+            
+            const controls = document.createElement('div');
+            controls.className = 'row-controls';
+            controls.appendChild(deleteBtn);
+            actionTd.appendChild(controls);
+            tr.appendChild(actionTd);
+            
+            tableBody.appendChild(tr);
+            
+            // Si es una nueva fila, agregarla a currentData
+            if (index === -1) {
+                const newRow = {};
+                currentColumns.forEach(column => {
+                    newRow[column] = '';
+                });
+                currentData.push(newRow);
+            }
+        }
+
+        function updateData(rowIndex, column, value) {
+            if (rowIndex < currentData.length) {
+                currentData[rowIndex][column] = value;
+            }
+        }
+
+        function agregarFila() {
+            addTableRow();
+        }
+
+        function eliminarFila(tr, index) {
+            if (confirm('¿Está seguro de que desea eliminar este registro?')) {
+                tr.remove();
+                if (index >= 0 && index < currentData.length) {
+                    currentData.splice(index, 1);
+                }
+                // Re-renderizar para actualizar índices
+                renderTable();
+            }
+        }
+
+        async function guardarDatos() {
+            try {
+                showLoading(true);
+                
+                // Filtrar filas completamente vacías
+                const dataToSave = currentData.filter(row => {
+                    return Object.values(row).some(value => value && value.toString().trim() !== '');
+                });
+                
+                if (dataToSave.length === 0) {
+                    showMessage('No hay datos para guardar', 'error');
+                    return;
+                }
+                
+                const response = await fetch('/api/pagos/cuentas-bancarias/guardar', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ data: dataToSave })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showMessage(result.message, 'success');
+                    cargarDatos(); // Recargar datos después de guardar
+                } else {
+                    throw new Error(result.detail || 'Error al guardar');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('Error al guardar: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function subirArchivo() {
+            const fileInput = document.getElementById('santanderFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showUploadMessage('Por favor seleccione un archivo', 'error');
+                return;
+            }
+            
+            if (!file.name.toLowerCase().match(/\.(xlsx|xls)$/)) {
+                showUploadMessage('Solo se permiten archivos Excel (.xlsx, .xls)', 'error');
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('santanderFile', file);
+                
+                const response = await fetch('/api/pagos/cuentas-bancarias/subir', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showUploadMessage(result.message, 'success');
+                    fileInput.value = ''; // Limpiar input
+                    setTimeout(() => {
+                        cargarDatos(); // Recargar datos después de subir archivo
+                    }, 1000);
+                } else {
+                    throw new Error(result.detail || 'Error al subir archivo');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showUploadMessage('Error al subir archivo: ' + error.message, 'error');
+            }
+        }
+
+        function showMessage(message, type = 'info') {
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = `<div class="message ${type}">${message}</div>`;
+            setTimeout(() => {
+                messageDiv.innerHTML = '';
+            }, 5000);
+        }
+
+        function showUploadMessage(message, type = 'info') {
+            const messageDiv = document.getElementById('uploadMessage');
+            messageDiv.innerHTML = `<div class="message ${type}">${message}</div>`;
+            setTimeout(() => {
+                messageDiv.innerHTML = '';
+            }, 5000);
+        }
+
+        function showLoading(show) {
+            const loading = document.getElementById('loading');
+            const table = document.querySelector('.table-container');
+            
+            if (show) {
+                loading.style.display = 'block';
+                table.style.opacity = '0.5';
+            } else {
+                loading.style.display = 'none';
+                table.style.opacity = '1';
+            }
+        }
+    </script>
+    {% endblock %}
+</body>
+</html>

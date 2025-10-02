@@ -1,0 +1,465 @@
+{% extends "base.html" %}
+
+{% block title %}Facturas Subidas - Constructora ICC{% endblock %}
+
+{% block content %}
+<div class="facturas-container">
+    <div class="header">
+        <h1>📤 Facturas Subidas a Kame</h1>
+        <div class="header-actions">
+            <button id="eliminarSeleccionados" class="btn btn-danger" disabled>
+                🗑️ Eliminar Seleccionados
+            </button>
+            <button id="guardarCambios" class="btn btn-success" disabled>
+                💾 Guardar Cambios
+            </button>
+        </div>
+    </div>
+
+    <div id="messageContainer" class="message-container" style="display: none;">
+        <div id="messageContent" class="message-content"></div>
+    </div>
+
+    <div class="filters-container">
+        <div class="search-group">
+            <label for="busqueda">🔎 Búsqueda:</label>
+            <input type="text" id="busqueda" class="filter-input" placeholder="Buscar por folio, RUT o proveedor...">
+        </div>
+    </div>
+
+    <div class="table-container">
+        <div class="table-wrapper">
+            <table id="facturasSubidasTable" class="facturas-table">
+                <thead>
+                    <tr>
+                        <th class="checkbox-column">
+                            <input type="checkbox" id="selectAll">
+                        </th>
+                        <th>ID Documento</th>
+                        <th>Folio Único</th>
+                        <th>RUT Proveedor</th>
+                        <th>Nombre Proveedor</th>
+                        <th>Fecha Emisión</th>
+                        <th>Monto Neto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Las filas se cargarán dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="table-info">
+        <span id="totalRegistros">Total: 0 registros</span>
+        <span id="registrosSeleccionados">Seleccionados: 0</span>
+    </div>
+</div>
+
+<style>
+.facturas-container {
+    padding: 20px;
+    min-height: calc(100vh - 60px);
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #333;
+}
+
+.header h1 {
+    color: #fff;
+    font-size: 1.8rem;
+    margin: 0;
+}
+
+.header-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background-color: #c82333;
+}
+
+.btn-success {
+    background-color: #28a745;
+    color: white;
+}
+
+.btn-success:hover:not(:disabled) {
+    background-color: #218838;
+}
+
+.message-container {
+    margin-bottom: 20px;
+}
+
+.message-content {
+    padding: 15px;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+.message-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.message-error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.filters-container {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #333;
+    border-radius: 5px;
+}
+
+.search-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.search-group label {
+    color: #fff;
+    font-weight: bold;
+    min-width: 80px;
+}
+
+.filter-input {
+    padding: 8px 12px;
+    border: 1px solid #555;
+    border-radius: 4px;
+    background-color: #444;
+    color: #fff;
+    font-size: 14px;
+    flex: 1;
+    max-width: 400px;
+}
+
+.filter-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+}
+
+.table-container {
+    background-color: #333;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 15px;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+    max-height: 70vh;
+}
+
+.facturas-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #444;
+}
+
+.facturas-table th,
+.facturas-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #555;
+    color: #fff;
+}
+
+.facturas-table th {
+    background-color: #222;
+    font-weight: bold;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.facturas-table tr:hover {
+    background-color: #555;
+}
+
+.checkbox-column {
+    width: 50px;
+    text-align: center;
+}
+
+.table-info {
+    display: flex;
+    justify-content: space-between;
+    color: #ccc;
+    font-size: 14px;
+}
+
+.highlight {
+    background-color: #ffeaa7 !important;
+    color: #2d3436 !important;
+}
+
+@media (max-width: 768px) {
+    .header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+    }
+    
+    .header-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .search-group {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .filter-input {
+        width: 100%;
+        max-width: none;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let facturasSubidas = [];
+    let facturasFiltradas = [];
+    let cambiosPendientes = false;
+    let facturasEliminadas = new Set();
+
+    // Elementos DOM
+    const tabla = document.getElementById('facturasSubidasTable').getElementsByTagName('tbody')[0];
+    const busquedaInput = document.getElementById('busqueda');
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const eliminarBtn = document.getElementById('eliminarSeleccionados');
+    const guardarBtn = document.getElementById('guardarCambios');
+    const totalRegistros = document.getElementById('totalRegistros');
+    const registrosSeleccionados = document.getElementById('registrosSeleccionados');
+    const messageContainer = document.getElementById('messageContainer');
+    const messageContent = document.getElementById('messageContent');
+
+    // Cargar datos al iniciar
+    cargarFacturasSubidas();
+
+    // Event listeners
+    busquedaInput.addEventListener('input', filtrarFacturas);
+    selectAllCheckbox.addEventListener('change', seleccionarTodas);
+    eliminarBtn.addEventListener('click', eliminarSeleccionados);
+    guardarBtn.addEventListener('click', guardarCambios);
+
+    async function cargarFacturasSubidas() {
+        try {
+            const response = await fetch('/api/facturas-subidas');
+            if (!response.ok) {
+                throw new Error('Error al cargar las facturas subidas');
+            }
+            
+            const data = await response.json();
+            facturasSubidas = data.facturas || [];
+            facturasFiltradas = [...facturasSubidas];
+            
+            renderizarTabla();
+            actualizarContadores();
+            
+        } catch (error) {
+            mostrarMensaje('Error al cargar las facturas subidas: ' + error.message, 'error');
+        }
+    }
+
+    function filtrarFacturas() {
+        const busqueda = busquedaInput.value.toLowerCase().trim();
+        
+        if (!busqueda) {
+            facturasFiltradas = facturasSubidas.filter(f => !facturasEliminadas.has(f.idDocumento));
+        } else {
+            facturasFiltradas = facturasSubidas.filter(factura => {
+                if (facturasEliminadas.has(factura.idDocumento)) return false;
+                
+                return (
+                    factura.folioUnico.toLowerCase().includes(busqueda) ||
+                    factura.rutProveedor.toLowerCase().includes(busqueda) ||
+                    factura.nomProveedor.toLowerCase().includes(busqueda)
+                );
+            });
+        }
+        
+        renderizarTabla();
+        actualizarContadores();
+    }
+
+    function renderizarTabla() {
+        tabla.innerHTML = '';
+        
+        facturasFiltradas.forEach(factura => {
+            const fila = tabla.insertRow();
+            fila.innerHTML = `
+                <td class="checkbox-column">
+                    <input type="checkbox" class="row-checkbox" data-id="${factura.idDocumento}">
+                </td>
+                <td>${factura.idDocumento}</td>
+                <td>${factura.folioUnico}</td>
+                <td>${factura.rutProveedor}</td>
+                <td>${factura.nomProveedor}</td>
+                <td>${factura.fechaEmision || ''}</td>
+                <td>${factura.montoNeto ? '$' + Number(factura.montoNeto).toLocaleString() : ''}</td>
+            `;
+            
+            // Event listener para checkbox individual
+            const checkbox = fila.querySelector('.row-checkbox');
+            checkbox.addEventListener('change', actualizarSeleccion);
+        });
+    }
+
+    function seleccionarTodas() {
+        const checkboxes = document.querySelectorAll('.row-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = selectAllCheckbox.checked;
+        });
+        actualizarSeleccion();
+    }
+
+    function actualizarSeleccion() {
+        const checkboxes = document.querySelectorAll('.row-checkbox');
+        const seleccionados = document.querySelectorAll('.row-checkbox:checked');
+        
+        // Actualizar estado del checkbox "Seleccionar todas"
+        selectAllCheckbox.indeterminate = seleccionados.length > 0 && seleccionados.length < checkboxes.length;
+        selectAllCheckbox.checked = seleccionados.length > 0 && seleccionados.length === checkboxes.length;
+        
+        // Habilitar/deshabilitar botón de eliminar
+        eliminarBtn.disabled = seleccionados.length === 0;
+        
+        // Actualizar contador
+        actualizarContadores();
+    }
+
+    function eliminarSeleccionados() {
+        const seleccionados = document.querySelectorAll('.row-checkbox:checked');
+        
+        if (seleccionados.length === 0) {
+            mostrarMensaje('No hay facturas seleccionadas', 'error');
+            return;
+        }
+        
+        if (!confirm(`¿Está seguro de que desea eliminar ${seleccionados.length} factura(s)?`)) {
+            return;
+        }
+        
+        // Marcar como eliminadas
+        seleccionados.forEach(checkbox => {
+            const id = parseInt(checkbox.dataset.id);
+            facturasEliminadas.add(id);
+        });
+        
+        // Marcar cambios pendientes
+        cambiosPendientes = true;
+        guardarBtn.disabled = false;
+        
+        // Filtrar y re-renderizar
+        filtrarFacturas();
+        
+        mostrarMensaje(`${seleccionados.length} factura(s) marcada(s) para eliminar. Presione "Guardar Cambios" para confirmar.`, 'success');
+    }
+
+    async function guardarCambios() {
+        if (!cambiosPendientes) {
+            mostrarMensaje('No hay cambios pendientes', 'error');
+            return;
+        }
+        
+        if (facturasEliminadas.size === 0) {
+            mostrarMensaje('No hay facturas para eliminar', 'error');
+            return;
+        }
+        
+        try {
+            guardarBtn.disabled = true;
+            guardarBtn.textContent = '💾 Guardando...';
+            
+            const response = await fetch('/api/facturas-subidas/eliminar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    idsEliminar: Array.from(facturasEliminadas)
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Error al guardar los cambios');
+            }
+            
+            const result = await response.json();
+            
+            // Eliminar definitivamente de la lista local
+            facturasSubidas = facturasSubidas.filter(f => !facturasEliminadas.has(f.idDocumento));
+            facturasEliminadas.clear();
+            cambiosPendientes = false;
+            
+            // Re-filtrar y renderizar
+            filtrarFacturas();
+            
+            mostrarMensaje(`✅ Cambios guardados correctamente. ${result.eliminadas} factura(s) eliminada(s).`, 'success');
+            
+        } catch (error) {
+            mostrarMensaje('Error al guardar los cambios: ' + error.message, 'error');
+        } finally {
+            guardarBtn.disabled = true;
+            guardarBtn.textContent = '💾 Guardar Cambios';
+        }
+    }
+
+    function actualizarContadores() {
+        const seleccionados = document.querySelectorAll('.row-checkbox:checked').length;
+        totalRegistros.textContent = `Total: ${facturasFiltradas.length} registros`;
+        registrosSeleccionados.textContent = `Seleccionados: ${seleccionados}`;
+    }
+
+    function mostrarMensaje(mensaje, tipo) {
+        messageContent.textContent = mensaje;
+        messageContent.className = `message-content message-${tipo}`;
+        messageContainer.style.display = 'block';
+        
+        setTimeout(() => {
+            messageContainer.style.display = 'none';
+        }, 5000);
+    }
+});
+</script>
+{% endblock %}

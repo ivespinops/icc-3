@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Gestión de Items - Constructora ICC{% endblock %}
+
+{% block content %}
+<div class="welcome">
+    <h2>Gestión de Items para Flujo de Cajas</h2>
+    <p>Administrar catálogo de items disponibles para obras</p>
+</div>
+
+<div class="card">
+    <h3>Agregar Nuevo Item</h3>
+    <form id="add-item-form" style="margin-bottom: 20px;">
+        <div style="display: grid; grid-template-columns: 1fr 2fr 1fr auto; gap: 10px; margin-bottom: 10px;">
+            <input type="text" id="codigo" placeholder="Código" required style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            <input type="text" id="nombre" placeholder="Nombre" required style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            <select id="tipo" required style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                <option value="">Seleccionar Tipo</option>
+                <option value="INGRESOS">INGRESOS</option>
+                <option value="Obras Preliminares">Obras Preliminares</option>
+                <option value="SUBCONTRATO">SUBCONTRATO</option>
+                <option value="EQUIPOS">EQUIPOS</option>
+                <option value="INSTALACION FAENA">INSTALACION FAENA</option>
+                <option value="GASTOS GENERALES">GASTOS GENERALES</option>
+                <option value="MANO DE OBRA">MANO DE OBRA</option>
+            </select>
+            <button type="submit" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Agregar Item</button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <h3>Items Disponibles</h3>
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f8f9fa;">
+                    <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Código</th>
+                    <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Nombre</th>
+                    <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Tipo</th>
+                    <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Fecha Creación</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td style="padding: 8px; border: 1px solid #ddd;">{{ item.codigo }}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">{{ item.nombre }}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">{{ item.tipo }}</td>
+                    <td style="padding: 8px; border: 1px solid #ddd;">{{ item.created_at }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Navegación</h3>
+    <p>• Volver al <a href="/obras" style="color: #0066cc;">Módulo de Obras</a></p>
+</div>
+
+<script>
+document.getElementById('add-item-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const codigo = document.getElementById('codigo').value;
+    const nombre = document.getElementById('nombre').value;
+    const tipo = document.getElementById('tipo').value;
+
+    if (!codigo || !nombre || !tipo) {
+        alert('Todos los campos son requeridos');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('codigo', codigo);
+    formData.append('nombre', nombre);
+    formData.append('tipo', tipo);
+
+    try {
+        const response = await fetch('/obras/items', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (response.ok) {
+            alert('Item creado exitosamente');
+            location.reload();
+        } else {
+            const errorData = await response.json();
+            alert(errorData.detail || 'Error al crear el item');
+        }
+    } catch (error) {
+        alert('Error de conexión');
+    }
+});
+</script>
+
+{% endblock %}

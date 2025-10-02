@@ -1,0 +1,1378 @@
+{% extends "base.html" %}
+
+{% block title %}Plantilla Preliminar - Pagos - Constructora ICC{% endblock %}
+
+{% block content %}
+<div class="welcome">
+    <h2>Plantilla Preliminar</h2>
+    <p>Resultados del procesamiento de flujo de pagos</p>
+</div>
+
+<div class="card" style="width: 98%; max-width: none; margin: 0 auto 1rem auto;">
+    <h3>Datos de la Planilla</h3>
+    <div id="loading" style="text-align: center; padding: 20px; display: block;">
+        <p>Cargando datos...</p>
+    </div>
+    
+    <div id="stats" style="margin-bottom: 20px; display: none;">
+        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+            <div style="background: #2a2a2a; padding: 10px; border-radius: 5px; flex: 1; min-width: 200px; border: 1px solid #444;">
+                <strong style="color: #ffffff;">Total de registros:</strong>
+                <span id="totalRegistros" style="font-size: 1.2em; color: #17a2b8;">-</span>
+            </div>
+            <div style="background: #2a2a2a; padding: 10px; border-radius: 5px; flex: 1; min-width: 200px; border: 1px solid #444;">
+                <strong style="color: #ffffff;">Con cesiones:</strong>
+                <span id="conCesiones" style="font-size: 1.2em; color: #28a745;">-</span>
+            </div>
+            <div style="background: #2a2a2a; padding: 10px; border-radius: 5px; flex: 1; min-width: 200px; border: 1px solid #444;">
+                <strong style="color: #ffffff;">Sin cesiones:</strong>
+                <span id="sinCesiones" style="font-size: 1.2em; color: #b0b0b0;">-</span>
+            </div>
+        </div>
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 20px;">
+            <div style="background: #2a2a2a; padding: 10px; border-radius: 5px; flex: 1; min-width: 200px; border: 1px solid #444;">
+                <strong style="color: #ffffff;">Deuda Total:</strong>
+                <span id="deudaTotal" style="font-size: 1.2em; color: #ffc107;">$-</span>
+            </div>
+            <div style="background: #2a2a2a; padding: 10px; border-radius: 5px; flex: 1; min-width: 200px; border: 1px solid #444;">
+                <strong style="color: #ffffff;">Deuda Total Cesiones:</strong>
+                <span id="deudaTotalCesiones" style="font-size: 1.2em; color: #28a745;">$-</span>
+            </div>
+            <div style="background: #2a2a2a; padding: 10px; border-radius: 5px; flex: 1; min-width: 200px; border: 1px solid #444;">
+                <strong style="color: #ffffff;">Deuda Total No Cesiones:</strong>
+                <span id="deudaTotalNoCesiones" style="font-size: 1.2em; color: #17a2b8;">$-</span>
+            </div>
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: nowrap; margin-top: 20px; overflow-x: auto;">
+            <div style="background: #2a2a2a; padding: 8px; border-radius: 5px; flex: 1; min-width: 140px; border: 1px solid #444;">
+                <strong style="color: #ffffff; font-size: 0.9em;">Deuda Semana:</strong><br>
+                <span id="deudaSemana" style="font-size: 1.1em; color: #dc3545;">$-</span>
+            </div>
+            <div style="background: #2a2a2a; padding: 8px; border-radius: 5px; flex: 1; min-width: 140px; border: 1px solid #444;">
+                <strong style="color: #ffffff; font-size: 0.9em;">Deuda Total 7 días:</strong><br>
+                <span id="deudaTotal7" style="font-size: 1.1em; color: #28a745;">$-</span>
+            </div>
+            <div style="background: #2a2a2a; padding: 8px; border-radius: 5px; flex: 1; min-width: 140px; border: 1px solid #444;">
+                <strong style="color: #ffffff; font-size: 0.9em;">Deuda Total 15 días:</strong><br>
+                <span id="deudaTotal15" style="font-size: 1.1em; color: #17a2b8;">$-</span>
+            </div>
+            <div style="background: #2a2a2a; padding: 8px; border-radius: 5px; flex: 1; min-width: 140px; border: 1px solid #444;">
+                <strong style="color: #ffffff; font-size: 0.9em;">Deuda Total 30 días:</strong><br>
+                <span id="deudaTotal30" style="font-size: 1.1em; color: #ffc107;">$-</span>
+            </div>
+            <div style="background: #2a2a2a; padding: 8px; border-radius: 5px; flex: 1; min-width: 140px; border: 1px solid #444;">
+                <strong style="color: #ffffff; font-size: 0.9em;">Deuda Total 45 días:</strong><br>
+                <span id="deudaTotal45" style="font-size: 1.1em; color: #fd7e14;">$-</span>
+            </div>
+            <div style="background: #2a2a2a; padding: 8px; border-radius: 5px; flex: 1; min-width: 140px; border: 1px solid #444;">
+                <strong style="color: #ffffff; font-size: 0.9em;">Deuda Total 60 días:</strong><br>
+                <span id="deudaTotal60" style="font-size: 1.1em; color: #dc3545;">$-</span>
+            </div>
+        </div>
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 20px;">
+            <div style="background: #2a2a2a; padding: 10px; border-radius: 5px; flex: 1; min-width: 200px; border: 1px solid #444;">
+                <strong style="color: #ffffff;">Facturas a Pagar:</strong>
+                <span id="facturasAPagar" style="font-size: 1.2em; color: #ffc107;">-</span>
+            </div>
+            <div style="background: #2a2a2a; padding: 10px; border-radius: 5px; flex: 1; min-width: 200px; border: 1px solid #444;">
+                <strong style="color: #ffffff;">Facturas a Pagar Cesiones:</strong>
+                <span id="facturasAPagarCesiones" style="font-size: 1.2em; color: #28a745;">-</span>
+            </div>
+            <div style="background: #2a2a2a; padding: 10px; border-radius: 5px; flex: 1; min-width: 200px; border: 1px solid #444;">
+                <strong style="color: #ffffff;">Facturas a Pagar No Cesiones:</strong>
+                <span id="facturasAPagarNoCesiones" style="font-size: 1.2em; color: #17a2b8;">-</span>
+            </div>
+        </div>
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 20px;">
+            <div style="background: #2a2a2a; padding: 10px; border-radius: 5px; flex: 1; min-width: 200px; border: 1px solid #444;">
+                <strong style="color: #ffffff;">Monto Total a Pagar:</strong>
+                <span id="montoTotalPagar" style="font-size: 1.2em; color: #ffc107;">$-</span>
+            </div>
+            <div style="background: #2a2a2a; padding: 10px; border-radius: 5px; flex: 1; min-width: 200px; border: 1px solid #444;">
+                <strong style="color: #ffffff;">Monto a Pagar Cesiones:</strong>
+                <span id="montoPagarCesiones" style="font-size: 1.2em; color: #28a745;">$-</span>
+            </div>
+            <div style="background: #2a2a2a; padding: 10px; border-radius: 5px; flex: 1; min-width: 200px; border: 1px solid #444;">
+                <strong style="color: #ffffff;">Monto a Pagar No Cesiones:</strong>
+                <span id="montoPagarNoCesiones" style="font-size: 1.2em; color: #17a2b8;">$-</span>
+            </div>
+        </div>
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 20px;">
+            <div style="background: #2a2a2a; padding: 10px; border-radius: 5px; flex: 1; min-width: 200px; border: 1px solid #444;">
+                <strong style="color: #ffffff;">Saldo Cuenta:</strong>
+                <input type="text" id="saldoCuenta" placeholder="Ingrese saldo cuenta" 
+                       style="font-size: 1.2em; color: #ffffff; background: #1a1a1a; border: 1px solid #444; border-radius: 4px; padding: 5px; width: 150px; margin-left: 10px;">
+            </div>
+            <div style="background: #2a2a2a; padding: 10px; border-radius: 5px; flex: 1; min-width: 200px; border: 1px solid #444;">
+                <strong style="color: #ffffff;">Diferencia:</strong>
+                <span id="diferencia" style="font-size: 1.2em; color: #dc3545;">$-</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="noData" style="display: none; text-align: center; padding: 20px; color: #666;">
+        <p>No hay datos disponibles. Execute primero el flujo de pagos en "Preparar Plantilla".</p>
+    </div>
+
+    <div id="tableContainer" style="display: none;">
+        <div style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+            <input type="text" id="searchInput" placeholder="Buscar..." style="flex: 1; min-width: 200px; padding: 8px; border: 1px solid #444; border-radius: 4px; background-color: #1a1a1a; color: #ffffff;">
+            
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <select id="filterVB" multiple style="padding: 8px; border: 1px solid #444; border-radius: 4px; background-color: #1a1a1a; color: #ffffff; min-height: 35px;">
+                    <option value="">Todos los VB</option>
+                </select>
+                
+                <select id="filterEstadoPago" style="padding: 8px; border: 1px solid #444; border-radius: 4px; background-color: #1a1a1a; color: #ffffff;">
+                    <option value="">Todos los Estados</option>
+                </select>
+                
+                <div style="display: flex; gap: 5px; align-items: center;">
+                    <select id="filterAPagar" style="padding: 8px; border: 1px solid #444; border-radius: 4px; background-color: #1a1a1a; color: #ffffff;">
+                        <option value="">Todos A pagar</option>
+                        <option value="true">Sí</option>
+                        <option value="false">No</option>
+                    </select>
+                    <button id="selectAllFiltered" style="padding: 6px 10px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; white-space: nowrap;">Sel. Todos</button>
+                    <button id="deselectAllFiltered" style="padding: 6px 10px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; white-space: nowrap;">Desel. Todos</button>
+                </div>
+                
+                <select id="filterCesion" style="padding: 8px; border: 1px solid #444; border-radius: 4px; background-color: #1a1a1a; color: #ffffff;">
+                    <option value="">Todas las Cesiones</option>
+                    <option value="Sí">Sí</option>
+                    <option value="No">No</option>
+                </select>
+                
+                <div style="display: flex; gap: 5px; align-items: center;">
+                    <label style="color: #ffffff; font-size: 14px;">Fecha desde:</label>
+                    <input type="date" id="filterFechaDesde" style="padding: 8px; border: 1px solid #444; border-radius: 4px; background-color: #1a1a1a; color: #ffffff;">
+                </div>
+                
+                <div style="display: flex; gap: 5px; align-items: center;">
+                    <label style="color: #ffffff; font-size: 14px;">Fecha hasta:</label>
+                    <input type="date" id="filterFechaHasta" style="padding: 8px; border: 1px solid #444; border-radius: 4px; background-color: #1a1a1a; color: #ffffff;">
+                </div>
+                
+                <select id="filterTipoFecha" style="padding: 8px; border: 1px solid #444; border-radius: 4px; background-color: #1a1a1a; color: #ffffff;">
+                    <option value="Fecha de Pago">Fecha de Pago</option>
+                    <option value="Fecha de Emisión">Fecha de Emisión</option>
+                </select>
+                
+                <button id="clearFilters" style="padding: 8px 12px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Limpiar Filtros</button>
+                <button id="downloadData" style="padding: 8px 12px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">Descargar Excel</button>
+                <button id="emailData" style="padding: 8px 12px; background-color: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer;">Enviar Email</button>
+                <button id="saveChanges" style="padding: 8px 12px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Guardar Cambios</button>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <table id="dataTable" class="plantilla-table">
+                <thead>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+        
+        <div id="pagination" style="margin-top: 15px; text-align: center;">
+        </div>
+    </div>
+</div>
+
+<div class="card" style="width: 98%; max-width: none; margin: 0 auto 1rem auto;">
+    <h3>Navegación</h3>
+    <p>• <a href="/pagos/preparar-plantilla" style="color: #0066cc;">Preparar Plantilla</a></p>
+    <p>• <a href="/pagos/cesiones" style="color: #0066cc;">Ver Cesiones</a></p>
+    <p>• <a href="/pagos" style="color: #0066cc;">Volver al Módulo de Pagos</a></p>
+    <p>• <a href="/dashboard" style="color: #0066cc;">Volver al Dashboard</a></p>
+</div>
+
+<!-- Email Configuration Modal -->
+<div id="emailModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #2a2a2a; color: #ffffff; padding: 30px; border-radius: 10px; width: 600px; max-width: 90vw; max-height: 90vh; overflow-y: auto;">
+        <h3 style="margin-top: 0; margin-bottom: 20px; color: #ffffff;">Configuración de Email</h3>
+        
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 10px; font-weight: bold;">Destinatarios:</label>
+            <div id="recipientsList" style="max-height: 150px; overflow-y: auto; border: 1px solid #444; border-radius: 4px; padding: 10px; background-color: #1a1a1a;">
+                <!-- Recipients will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <label for="customRecipient" style="display: block; margin-bottom: 5px; font-weight: bold;">Agregar destinatario:</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="email" id="customRecipient" placeholder="email@ejemplo.com" style="flex: 1; padding: 8px; border: 1px solid #444; border-radius: 4px; background-color: #1a1a1a; color: #ffffff;">
+                <button id="addRecipient" style="padding: 8px 15px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Agregar</button>
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <label for="emailSubject" style="display: block; margin-bottom: 5px; font-weight: bold;">Asunto:</label>
+            <input type="text" id="emailSubject" value="FACTURAS SIN APROBACIÓN (Prueba)" style="width: 100%; padding: 8px; border: 1px solid #444; border-radius: 4px; background-color: #1a1a1a; color: #ffffff; box-sizing: border-box;">
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <label for="emailContent" style="display: block; margin-bottom: 5px; font-weight: bold;">Contenido del Email:</label>
+            <textarea id="emailContent" rows="8" style="width: 100%; padding: 8px; border: 1px solid #444; border-radius: 4px; background-color: #1a1a1a; color: #ffffff; box-sizing: border-box; resize: vertical;">Estimados, favor dar V°B° las facturas en flujo de aprobación y gestionar aquellas que están aún sin asociar, en especial las de la primera quincena de agosto que ya debieran estar con aprobación:
+
+{TABLA_DATOS}
+
+Saludos!</textarea>
+        </div>
+        
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button id="cancelEmail" style="padding: 10px 20px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">Cancelar</button>
+            <button id="sendEmail" style="padding: 10px 20px; background-color: #17a2b8; color: white; border: none; border-radius: 4px; cursor: pointer;">Enviar Email</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.table-container {
+    overflow: auto;
+    border: 1px solid #444;
+    border-radius: 5px;
+    max-height: 70vh;
+    max-width: 100%;
+    background-color: #1a1a1a;
+}
+
+.table-container::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+.table-container::-webkit-scrollbar-track {
+    background: #2a2a2a;
+    border-radius: 6px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 6px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+    background: #777;
+}
+
+.plantilla-table {
+    width: 100%;
+    min-width: 1200px;
+    border-collapse: collapse;
+    background-color: #1a1a1a;
+    color: #ffffff;
+    margin: 0;
+}
+
+.plantilla-table thead {
+    background-color: #2a2a2a;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.plantilla-table th,
+.plantilla-table td {
+    border: 1px solid #333;
+    white-space: nowrap;
+}
+
+.plantilla-table tbody tr:hover {
+    background-color: #2a2a2a !important;
+}
+</style>
+
+<script>
+let currentData = [];
+let originalData = [];
+let filteredData = [];
+let currentPage = 1;
+const recordsPerPage = 200;
+let editableColumns = ['Monto Pago', 'Pagado', 'Saldo', 'A pagar'];
+let numericColumns = ['Neto', 'IVA', 'Monto', 'Monto Pago', 'Pagado', 'Saldo'];
+let sortColumn = null;
+let sortDirection = 'asc';
+
+function updateIndicators() {
+    if (!originalData || originalData.length === 0) {
+        console.log('No hay datos para calcular indicadores');
+        return;
+    }
+    
+    console.log('Calculando indicadores con', originalData.length, 'registros');
+    console.log('Primer registro:', originalData[0]);
+    
+    let montoTotalPagar = 0;
+    let montoPagarCesiones = 0;
+    let montoPagarNoCesiones = 0;
+    
+    let facturasAPagar = 0;
+    let facturasAPagarCesiones = 0;
+    let facturasAPagarNoCesiones = 0;
+    
+    originalData.forEach((row, index) => {
+        // Verificar diferentes posibles valores para "A pagar"
+        const aPagar = row['A pagar'] === 'Sí' || row['A pagar'] === 'Si' || 
+                      row['A pagar'] === true || row['A pagar'] === 'TRUE' ||
+                      row['A pagar'] === 'True' || row['A pagar'] === 1;
+        
+        // Obtener monto pago de diferentes posibles columnas
+        let montoPago = 0;
+        if (row['Monto Pago']) {
+            montoPago = parseFloat(String(row['Monto Pago']).replace(/[^\d.-]/g, '')) || 0;
+        } else if (row['Monto de Pago']) {
+            montoPago = parseFloat(String(row['Monto de Pago']).replace(/[^\d.-]/g, '')) || 0;
+        } else if (row['monto_pago']) {
+            montoPago = parseFloat(String(row['monto_pago']).replace(/[^\d.-]/g, '')) || 0;
+        }
+        
+        // Verificar diferentes posibles valores para "Cesión"
+        const esCesion = row['Cesión'] === 'Sí' || row['Cesión'] === 'Si' ||
+                        row['Cesion'] === 'Sí' || row['Cesion'] === 'Si' ||
+                        row['cesion'] === 'Sí' || row['cesion'] === 'Si';
+        
+        if (aPagar) {
+            facturasAPagar++;
+            if (esCesion) {
+                facturasAPagarCesiones++;
+            } else {
+                facturasAPagarNoCesiones++;
+            }
+            
+            if (montoPago > 0) {
+                montoTotalPagar += montoPago;
+                if (esCesion) {
+                    montoPagarCesiones += montoPago;
+                } else {
+                    montoPagarNoCesiones += montoPago;
+                }
+                
+                if (index < 5) { // Log de los primeros 5 para debug
+                    console.log(`Registro ${index}: A pagar=${aPagar}, Monto=${montoPago}, Cesión=${esCesion}`);
+                }
+            }
+        }
+    });
+    
+    console.log('Totales calculados:', {
+        total: montoTotalPagar,
+        cesiones: montoPagarCesiones,
+        noCesiones: montoPagarNoCesiones,
+        facturasTotal: facturasAPagar,
+        facturasCesiones: facturasAPagarCesiones,
+        facturasNoCesiones: facturasAPagarNoCesiones
+    });
+    
+    document.getElementById('facturasAPagar').textContent = facturasAPagar;
+    document.getElementById('facturasAPagarCesiones').textContent = facturasAPagarCesiones;
+    document.getElementById('facturasAPagarNoCesiones').textContent = facturasAPagarNoCesiones;
+    
+    document.getElementById('montoTotalPagar').textContent = '$' + Math.round(montoTotalPagar).toLocaleString('es-CL');
+    document.getElementById('montoPagarCesiones').textContent = '$' + Math.round(montoPagarCesiones).toLocaleString('es-CL');
+    document.getElementById('montoPagarNoCesiones').textContent = '$' + Math.round(montoPagarNoCesiones).toLocaleString('es-CL');
+    
+    updateDiferencia(montoTotalPagar);
+}
+
+
+function updateDeudaTotalIndicators() {
+    if (!originalData || originalData.length === 0) {
+        console.log('No hay datos para calcular indicadores de deuda');
+        return;
+    }
+    
+    console.log('Calculando indicadores de deuda con', originalData.length, 'registros');
+    
+    // Fecha actual para comparaciones
+    const hoy = new Date();
+    
+    // Calcular el viernes de la semana actual (mismo cálculo que backend)
+    const viernesActual = new Date(hoy);
+    const diasHastaViernes = (5 - hoy.getDay()) % 7; // domingo=0, viernes=5
+    viernesActual.setDate(hoy.getDate() + diasHastaViernes);
+    viernesActual.setHours(0, 0, 0, 0); // Inicio del viernes (como en backend)
+    
+    const en7Dias = new Date(hoy.getTime() + (7 * 24 * 60 * 60 * 1000));
+    const en15Dias = new Date(hoy.getTime() + (15 * 24 * 60 * 60 * 1000));
+    const en30Dias = new Date(hoy.getTime() + (30 * 24 * 60 * 60 * 1000));
+    const en45Dias = new Date(hoy.getTime() + (45 * 24 * 60 * 60 * 1000));
+    const en60Dias = new Date(hoy.getTime() + (60 * 24 * 60 * 60 * 1000));
+    
+    let deudaTotal = 0;
+    let deudaTotalCesiones = 0;
+    let deudaTotalNoCesiones = 0;
+    let deudaSemana = 0;
+    let deudaTotal7Dias = 0;
+    let deudaTotal15Dias = 0;
+    let deudaTotal30Dias = 0;
+    let deudaTotal45Dias = 0;
+    let deudaTotal60Dias = 0;
+    
+    originalData.forEach((row, index) => {
+        // Verificar diferentes posibles valores para "Estado de Pago" y "VB"
+        const estadoPago = row['Estado de Pago'] || '';
+        const vb = row['VB'] || '';
+        
+        // Condición: Estado de Pago = "Sin Pagos" Y VB = "Aprobada", "Ingresada", "Espera Aprobacion", "Parcialmente Aprobada"
+        const esEstadoSinPagos = estadoPago === 'Sin Pagos';
+        const esVBValido = vb === 'Aprobada' || vb === 'Ingresada' || vb === 'Espera Aprobacion' || vb === 'Parcialmente Aprobada';
+        
+        const esValidoParaDeuda = esEstadoSinPagos && esVBValido;
+        
+        if (index < 5) { // Log de los primeros 5 para debug
+            console.log(`Registro deuda ${index}: Estado Pago=${estadoPago}, VB=${vb}, Válido=${esValidoParaDeuda}`);
+        }
+        
+        if (esValidoParaDeuda) {
+            // Obtener saldo de diferentes posibles columnas
+            let saldo = 0;
+            if (row['Saldo']) {
+                saldo = parseFloat(String(row['Saldo']).replace(/[^\d.-]/g, '')) || 0;
+            }
+            
+            if (saldo > 0) {
+                // Sumar a deuda total (como estaba originalmente)
+                deudaTotal += saldo;
+                
+                // Verificar cesión para filtros de deuda
+                const cesion = row['Cesión'] || '';
+                if (cesion === 'Sí') {
+                    deudaTotalCesiones += saldo;
+                } else if (cesion === 'No') {
+                    deudaTotalNoCesiones += saldo;
+                }
+                
+                // Verificar fechas para los diferentes indicadores
+                const fechaPago = row['Fecha de Pago'];
+                if (fechaPago) {
+                    const fechaPagoDate = new Date(fechaPago);
+                    
+                    // Deuda Semana: fecha de pago <= viernes de la semana actual
+                    if (fechaPagoDate <= viernesActual) {
+                        deudaSemana += saldo;
+                    }
+                    
+                    // Deuda Total 7 días: fecha de pago entre viernes + 1 día y 7 días
+                    if (fechaPagoDate > viernesActual && fechaPagoDate <= en7Dias) {
+                        deudaTotal7Dias += saldo;
+                    }
+                    
+                    // Deuda Total 15 días: fecha de pago entre 7 y 15 días
+                    if (fechaPagoDate > en7Dias && fechaPagoDate <= en15Dias) {
+                        deudaTotal15Dias += saldo;
+                    }
+                    
+                    // Deuda Total 30 días: fecha de pago entre 15 y 30 días
+                    if (fechaPagoDate > en15Dias && fechaPagoDate <= en30Dias) {
+                        deudaTotal30Dias += saldo;
+                    }
+                    
+                    // Deuda Total 45 días: fecha de pago entre 30 y 45 días
+                    if (fechaPagoDate > en30Dias && fechaPagoDate <= en45Dias) {
+                        deudaTotal45Dias += saldo;
+                    }
+                    
+                    // Deuda Total 60 días: fecha de pago entre 45 y 60 días
+                    if (fechaPagoDate > en45Dias && fechaPagoDate <= en60Dias) {
+                        deudaTotal60Dias += saldo;
+                    }
+                }
+            }
+        }
+    });
+    
+    console.log('Indicadores de deuda calculados:', {
+        deudaTotal: deudaTotal,
+        deudaTotalCesiones: deudaTotalCesiones,
+        deudaTotalNoCesiones: deudaTotalNoCesiones,
+        deudaSemana: deudaSemana,
+        deudaTotal7Dias: deudaTotal7Dias,
+        deudaTotal15Dias: deudaTotal15Dias,
+        deudaTotal30Dias: deudaTotal30Dias,
+        deudaTotal45Dias: deudaTotal45Dias,
+        deudaTotal60Dias: deudaTotal60Dias
+    });
+    
+    document.getElementById('deudaTotal').textContent = '$' + Math.round(deudaTotal).toLocaleString('es-CL');
+    document.getElementById('deudaTotalCesiones').textContent = '$' + Math.round(deudaTotalCesiones).toLocaleString('es-CL');
+    document.getElementById('deudaTotalNoCesiones').textContent = '$' + Math.round(deudaTotalNoCesiones).toLocaleString('es-CL');
+    document.getElementById('deudaSemana').textContent = '$' + Math.round(deudaSemana).toLocaleString('es-CL');
+    document.getElementById('deudaTotal7').textContent = '$' + Math.round(deudaTotal7Dias).toLocaleString('es-CL');
+    document.getElementById('deudaTotal15').textContent = '$' + Math.round(deudaTotal15Dias).toLocaleString('es-CL');
+    document.getElementById('deudaTotal30').textContent = '$' + Math.round(deudaTotal30Dias).toLocaleString('es-CL');
+    document.getElementById('deudaTotal45').textContent = '$' + Math.round(deudaTotal45Dias).toLocaleString('es-CL');
+    document.getElementById('deudaTotal60').textContent = '$' + Math.round(deudaTotal60Dias).toLocaleString('es-CL');
+}
+
+function updateDiferencia(montoTotalPagar) {
+    const saldoCuentaInput = document.getElementById('saldoCuenta');
+    const saldoCuentaValue = saldoCuentaInput.value.trim();
+    
+    console.log('=== CALCULANDO DIFERENCIA ===');
+    console.log('Saldo Cuenta Value:', saldoCuentaValue);
+    console.log('Monto Total Pagar (parametro):', montoTotalPagar);
+    
+    // Si el parámetro es NaN, obtener el valor directamente del elemento
+    let montoTotal = montoTotalPagar;
+    if (isNaN(montoTotalPagar)) {
+        console.log('MontoTotalPagar es NaN, obteniendo del elemento');
+        const montoElement = document.getElementById('montoTotalPagar');
+        if (montoElement && montoElement.textContent !== '$-') {
+            let montoText = montoElement.textContent.replace('$', '').trim().replace(/\./g, '');
+            montoTotal = Number(montoText) || 0;
+            console.log('Monto obtenido del elemento:', montoTotal);
+        } else {
+            montoTotal = 0;
+        }
+    }
+    
+    // Siempre calcular si hay un valor (incluso si es "0")
+    if (saldoCuentaValue !== '') {
+        // Convertir a número - manejar el caso especial de "0"
+        let saldoCuenta;
+        if (saldoCuentaValue === '0') {
+            saldoCuenta = 0;
+        } else {
+            saldoCuenta = Number(saldoCuentaValue) || 0;
+        }
+        
+        const diferencia = saldoCuenta - montoTotal;
+        
+        console.log('Saldo Cuenta (número):', saldoCuenta);
+        console.log('Monto Total (final):', montoTotal);
+        console.log('Diferencia:', diferencia);
+        
+        const diferenciaElement = document.getElementById('diferencia');
+        
+        // Formatear el resultado
+        if (isNaN(diferencia)) {
+            diferenciaElement.textContent = '$Error';
+        } else {
+            diferenciaElement.textContent = '$' + diferencia.toLocaleString('es-CL', {maximumFractionDigits: 0});
+        }
+        
+        console.log('Diferencia final:', diferenciaElement.textContent);
+        
+        // Aplicar color
+        if (diferencia >= 0) {
+            diferenciaElement.style.color = '#28a745';
+        } else {
+            diferenciaElement.style.color = '#dc3545';
+        }
+    } else {
+        document.getElementById('diferencia').textContent = '$-';
+        document.getElementById('diferencia').style.color = '#dc3545';
+    }
+}
+
+async function loadData() {
+    try {
+        const response = await fetch('/api/pagos/plantilla-preliminar');
+        const result = await response.json();
+        
+        document.getElementById('loading').style.display = 'none';
+        
+        if (result.success && result.data && result.data.length > 0) {
+            currentData = result.data;
+            
+            console.log('Datos recibidos:', result.data.length, 'registros');
+            console.log('Columnas disponibles:', Object.keys(result.data[0]));
+            console.log('Muestra de datos:', result.data.slice(0, 2));
+            
+            // Mostrar estadísticas
+            document.getElementById('totalRegistros').textContent = result.data.length;
+            document.getElementById('conCesiones').textContent = result.estadisticas?.con_cesiones || 0;
+            document.getElementById('sinCesiones').textContent = result.estadisticas?.sin_cesiones || 0;
+            
+            // Mostrar tabla
+            document.getElementById('tableContainer').style.display = 'block';
+            originalData = [...result.data];
+            filteredData = [...result.data];
+            
+            updateIndicators();
+            updateDeudaTotalIndicators();
+            document.getElementById('stats').style.display = 'block';
+            
+            setupFilters();
+            renderTable();
+            
+        } else {
+            document.getElementById('noData').style.display = 'block';
+        }
+    } catch (error) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('noData').style.display = 'block';
+        console.error('Error loading data:', error);
+    }
+}
+
+function renderTable() {
+    if (filteredData.length === 0) return;
+    
+    const table = document.getElementById('dataTable');
+    const thead = table.querySelector('thead');
+    const tbody = table.querySelector('tbody');
+    
+    // Limpiar tabla
+    thead.innerHTML = '';
+    tbody.innerHTML = '';
+    
+    // Crear encabezados reordenados
+    let headers = Object.keys(filteredData[0]);
+    // Mover 'A pagar' al final
+    const aPagarIndex = headers.indexOf('A pagar');
+    if (aPagarIndex !== -1) {
+        headers.splice(aPagarIndex, 1);
+        headers.push('A pagar');
+    }
+    
+    const headerRow = document.createElement('tr');
+    headers.forEach(header => {
+        const th = document.createElement('th');
+        th.textContent = header + (sortColumn === header ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : '');
+        
+        // Set specific widths for target columns
+        let baseStyle = 'padding: 10px; font-weight: bold; color: #ffffff; cursor: pointer; user-select: none;';
+        if (header === 'Pagado' || header === 'Saldo') {
+            baseStyle += ' min-width: 120px; width: 120px;';
+        } else if (header === 'Monto Pago') {
+            baseStyle += ' min-width: 140px; width: 140px;';
+        }
+        
+        th.style.cssText = baseStyle;
+        
+        // Add click event for sorting
+        th.addEventListener('click', () => {
+            sortTable(header);
+        });
+        
+        headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    
+    // Calcular paginación
+    const startIndex = (currentPage - 1) * recordsPerPage;
+    const endIndex = Math.min(startIndex + recordsPerPage, filteredData.length);
+    const pageData = filteredData.slice(startIndex, endIndex);
+    
+    // Crear filas
+    pageData.forEach((row, index) => {
+        const tr = document.createElement('tr');
+        
+        // Check if this row has Cesión = "Sí"
+        const esCesion = row['Cesión'] === 'Sí' || row['Cesión'] === 'Si';
+        
+        if (esCesion) {
+            // Dark purple background with light gray text for cesions
+            tr.style.backgroundColor = '#4a2a5a';
+        } else {
+            tr.style.backgroundColor = index % 2 === 0 ? '#1a1a1a' : '#2a2a2a';
+        }
+        
+        headers.forEach(header => {
+            const td = document.createElement('td');
+            
+            // Set consistent widths for target columns
+            let baseStyle = 'padding: 8px;';
+            
+            // Apply color based on cesión status
+            if (esCesion) {
+                baseStyle += ' color: #c0c0c0;';
+            } else {
+                baseStyle += ' color: #ffffff;';
+            }
+            
+            if (header === 'Pagado' || header === 'Saldo') {
+                baseStyle += ' min-width: 120px; width: 120px;';
+            } else if (header === 'Monto Pago') {
+                baseStyle += ' min-width: 140px; width: 140px;';
+            }
+            
+            td.style.cssText = baseStyle;
+            
+            if (editableColumns.includes(header)) {
+                if (header === 'A pagar') {
+                    // Checkbox para A pagar
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.checked = row[header] === 'Sí' || row[header] === true;
+                    checkbox.style.cssText = 'transform: scale(1.2);';
+                    checkbox.addEventListener('change', (e) => {
+                        const originalIndex = originalData.findIndex(r => r === row);
+                        if (originalIndex !== -1) {
+                            originalData[originalIndex][header] = e.target.checked ? 'Sí' : 'No';
+                            filteredData[filteredData.findIndex(r => r === row)][header] = e.target.checked ? 'Sí' : 'No';
+                            
+                            // Actualizar Monto Pago basado en el estado del checkbox A pagar
+                            if (e.target.checked) {
+                                // Si se selecciona, Monto Pago = Saldo
+                                const saldoValue = row['Saldo'] || '0';
+                                originalData[originalIndex]['Monto Pago'] = saldoValue;
+                                filteredData[filteredData.findIndex(r => r === row)]['Monto Pago'] = saldoValue;
+                            } else {
+                                // Si se deselecciona, Monto Pago = 0
+                                originalData[originalIndex]['Monto Pago'] = '0';
+                                filteredData[filteredData.findIndex(r => r === row)]['Monto Pago'] = '0';
+                            }
+                            
+                            // Refrescar la tabla para mostrar los cambios
+                            renderTable(filteredData);
+                            updateIndicators();
+                        }
+                    });
+                    td.appendChild(checkbox);
+                } else {
+                    // Input para otros campos editables
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    
+                    let inputValue = row[header] || '';
+                    // Formatear valores numéricos en inputs
+                    if (numericColumns.includes(header) && inputValue !== '' && !isNaN(inputValue)) {
+                        inputValue = Math.round(parseFloat(inputValue)).toString();
+                    }
+                    
+                    input.value = inputValue;
+                    input.style.cssText = 'width: 100%; background-color: #1a1a1a; color: #ffffff; border: 1px solid #444; border-radius: 2px; padding: 2px 4px;';
+                    
+                    input.addEventListener('change', (e) => {
+                        let newValue = e.target.value;
+                        
+                        // Validar y formatear valores numéricos
+                        if (numericColumns.includes(header) && newValue !== '' && !isNaN(newValue)) {
+                            newValue = Math.round(parseFloat(newValue)).toString();
+                            e.target.value = newValue;
+                        }
+                        
+                        const originalIndex = originalData.findIndex(r => r === row);
+                        if (originalIndex !== -1) {
+                            originalData[originalIndex][header] = newValue;
+                            filteredData[filteredData.findIndex(r => r === row)][header] = newValue;
+                            if (header === 'Monto Pago') {
+                                updateIndicators();
+                            }
+                        }
+                    });
+                    
+                    td.appendChild(input);
+                }
+            } else {
+                let cellValue = row[header] || '';
+                
+                // Formatear números sin decimales para columnas específicas
+                if (numericColumns.includes(header) && cellValue !== '' && !isNaN(cellValue)) {
+                    cellValue = Math.round(parseFloat(cellValue)).toLocaleString('es-CL');
+                }
+                
+                td.textContent = cellValue;
+            }
+            
+            tr.appendChild(td);
+        });
+        
+        tbody.appendChild(tr);
+    });
+    
+    // Renderizar paginación
+    renderPagination();
+}
+
+function renderPagination() {
+    const totalPages = Math.ceil(filteredData.length / recordsPerPage);
+    const paginationDiv = document.getElementById('pagination');
+    
+    if (totalPages <= 1) {
+        paginationDiv.innerHTML = `<p style="color: #ffffff;">Mostrando ${filteredData.length} registros</p>`;
+        return;
+    }
+    
+    let paginationHTML = `<p style="color: #ffffff; margin-right: 10px;">Mostrando ${filteredData.length} registros - Página ${currentPage} de ${totalPages}</p>`;
+    
+    // Botón anterior
+    if (currentPage > 1) {
+        paginationHTML += `<button onclick="changePage(${currentPage - 1})" style="margin: 2px; padding: 5px 10px;">Anterior</button>`;
+    }
+    
+    // Números de página (mostrar máximo 10 páginas)
+    const startPage = Math.max(1, currentPage - 5);
+    const endPage = Math.min(totalPages, startPage + 9);
+    
+    if (startPage > 1) {
+        paginationHTML += `<button onclick="changePage(1)" style="margin: 2px; padding: 5px 10px;">1</button>`;
+        if (startPage > 2) {
+            paginationHTML += `<span style="margin: 0 5px; color: #ffffff;">...</span>`;
+        }
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        if (i === currentPage) {
+            paginationHTML += `<button style="margin: 2px; padding: 5px 10px; background-color: #007bff; color: white;">${i}</button>`;
+        } else {
+            paginationHTML += `<button onclick="changePage(${i})" style="margin: 2px; padding: 5px 10px;">${i}</button>`;
+        }
+    }
+    
+    if (endPage < totalPages) {
+        if (endPage < totalPages - 1) {
+            paginationHTML += `<span style="margin: 0 5px; color: #ffffff;">...</span>`;
+        }
+        paginationHTML += `<button onclick="changePage(${totalPages})" style="margin: 2px; padding: 5px 10px;">${totalPages}</button>`;
+    }
+    
+    // Botón siguiente
+    if (currentPage < totalPages) {
+        paginationHTML += `<button onclick="changePage(${currentPage + 1})" style="margin: 2px; padding: 5px 10px;">Siguiente</button>`;
+    }
+    
+    paginationDiv.innerHTML = paginationHTML;
+}
+
+function changePage(page) {
+    currentPage = page;
+    renderTable();
+}
+
+function setupFilters() {
+    // Obtener valores únicos para los filtros
+    const vbValues = [...new Set(originalData.map(row => row['VB']).filter(v => v))];
+    const estadoPagoValues = [...new Set(originalData.map(row => row['Estado de Pago']).filter(v => v))];
+    
+    // Llenar filtro VB
+    const filterVB = document.getElementById('filterVB');
+    vbValues.forEach(value => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = value;
+        filterVB.appendChild(option);
+    });
+    
+    // Llenar filtro Estado de Pago
+    const filterEstadoPago = document.getElementById('filterEstadoPago');
+    estadoPagoValues.forEach(value => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = value;
+        filterEstadoPago.appendChild(option);
+    });
+    
+    // Establecer fecha inicial por defecto
+    setDefaultDateFilter();
+    
+    // Event listeners para filtros
+    document.getElementById('searchInput').addEventListener('input', applyFilters);
+    document.getElementById('filterVB').addEventListener('change', applyFilters);
+    document.getElementById('filterEstadoPago').addEventListener('change', applyFilters);
+    document.getElementById('filterAPagar').addEventListener('change', applyFilters);
+    document.getElementById('filterCesion').addEventListener('change', applyFilters);
+    document.getElementById('filterFechaDesde').addEventListener('change', applyFilters);
+    document.getElementById('filterFechaHasta').addEventListener('change', applyFilters);
+    document.getElementById('filterTipoFecha').addEventListener('change', function() {
+        setDefaultDateFilter();
+        applyFilters();
+    });
+    
+    document.getElementById('clearFilters').addEventListener('click', clearAllFilters);
+    document.getElementById('downloadData').addEventListener('click', downloadData);
+    document.getElementById('emailData').addEventListener('click', showEmailModal);
+    document.getElementById('saveChanges').addEventListener('click', saveChanges);
+    document.getElementById('selectAllFiltered').addEventListener('click', selectAllFiltered);
+    document.getElementById('deselectAllFiltered').addEventListener('click', deselectAllFiltered);
+    
+    // Event listener para Saldo Cuenta
+    const saldoCuentaInput = document.getElementById('saldoCuenta');
+    saldoCuentaInput.addEventListener('input', () => {
+        console.log('=== INPUT EVENT ===');
+        console.log('Input de saldo cuenta cambiado:', saldoCuentaInput.value);
+        
+        const montoTotalElement = document.getElementById('montoTotalPagar');
+        console.log('Elemento monto total:', montoTotalElement);
+        console.log('Texto del elemento:', montoTotalElement ? montoTotalElement.textContent : 'null');
+        
+        if (montoTotalElement && montoTotalElement.textContent !== '$-') {
+            // Usar Number en lugar de parseFloat para mayor precisión
+            const montoTotalText = montoTotalElement.textContent.replace(/[^\d.-]/g, '');
+            const montoTotal = Number(montoTotalText);
+            console.log('Monto total text limpio:', montoTotalText);
+            console.log('Monto total como número:', montoTotal);
+            console.log('Monto total type:', typeof montoTotal);
+            
+            updateDiferencia(montoTotal);
+        } else {
+            console.log('No hay monto total disponible o es $-');
+        }
+    });
+    
+    saldoCuentaInput.addEventListener('keyup', () => {
+        const montoTotalElement = document.getElementById('montoTotalPagar');
+        if (montoTotalElement && montoTotalElement.textContent !== '$-') {
+            const montoTotalText = montoTotalElement.textContent.replace(/[^\d.-]/g, '');
+            const montoTotal = Number(montoTotalText);
+            updateDiferencia(montoTotal);
+        }
+    });
+}
+
+function setDefaultDateFilter() {
+    const tipoFecha = document.getElementById('filterTipoFecha').value || 'Fecha de Pago';
+    
+    // Obtener todas las fechas válidas del campo seleccionado
+    const fechas = originalData
+        .map(row => row[tipoFecha])
+        .filter(fecha => fecha && fecha !== '' && fecha !== null)
+        .map(fecha => new Date(fecha))
+        .filter(fecha => !isNaN(fecha.getTime()))
+        .sort((a, b) => a - b);
+    
+    if (fechas.length > 0) {
+        // Obtener la primera fecha (más antigua)
+        const primeraFecha = fechas[0];
+        const fechaFormateada = primeraFecha.toISOString().split('T')[0];
+        
+        // Establecer en el campo "Fecha desde"
+        document.getElementById('filterFechaDesde').value = fechaFormateada;
+        
+        console.log(`Fecha inicial establecida: ${fechaFormateada} para campo: ${tipoFecha}`);
+    }
+}
+
+function applyFilters() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const vbFilterElement = document.getElementById('filterVB');
+    const vbFilter = Array.from(vbFilterElement.selectedOptions).map(option => option.value);
+    const estadoPagoFilter = document.getElementById('filterEstadoPago').value;
+    const aPagarFilter = document.getElementById('filterAPagar').value;
+    const cesionFilter = document.getElementById('filterCesion').value;
+    const fechaDesde = document.getElementById('filterFechaDesde').value;
+    const fechaHasta = document.getElementById('filterFechaHasta').value;
+    const tipoFecha = document.getElementById('filterTipoFecha').value;
+    
+    filteredData = originalData.filter(row => {
+        // Filtro de búsqueda general
+        const matchesSearch = searchTerm === '' || 
+            Object.values(row).some(value => 
+                String(value).toLowerCase().includes(searchTerm)
+            );
+        
+        // Filtro VB
+        const matchesVB = vbFilter.length === 0 || vbFilter.includes('') || vbFilter.includes(row['VB']);
+        
+        // Filtro Estado de Pago
+        const matchesEstadoPago = estadoPagoFilter === '' || row['Estado de Pago'] === estadoPagoFilter;
+        
+        // Filtro A pagar
+        const matchesAPagar = aPagarFilter === '' || 
+            (aPagarFilter === 'true' && (row['A pagar'] === 'Sí' || row['A pagar'] === true)) ||
+            (aPagarFilter === 'false' && (row['A pagar'] === 'No' || row['A pagar'] === false));
+        
+        // Filtro Cesión
+        const matchesCesion = cesionFilter === '' || row['Cesión'] === cesionFilter;
+        
+        // Filtro de fechas
+        let matchesFecha = true;
+        if (fechaDesde || fechaHasta) {
+            const fechaCampo = row[tipoFecha];
+            if (fechaCampo) {
+                const fechaRow = new Date(fechaCampo);
+                
+                if (fechaDesde && fechaHasta) {
+                    const desde = new Date(fechaDesde);
+                    const hasta = new Date(fechaHasta);
+                    matchesFecha = fechaRow >= desde && fechaRow <= hasta;
+                } else if (fechaDesde) {
+                    const desde = new Date(fechaDesde);
+                    matchesFecha = fechaRow >= desde;
+                } else if (fechaHasta) {
+                    const hasta = new Date(fechaHasta);
+                    matchesFecha = fechaRow <= hasta;
+                }
+            } else {
+                // Si no hay fecha en el registro, no coincide con el filtro de fecha
+                matchesFecha = false;
+            }
+        }
+        
+        return matchesSearch && matchesVB && matchesEstadoPago && matchesAPagar && matchesCesion && matchesFecha;
+    });
+    
+    currentPage = 1;
+    renderTable();
+}
+
+function clearAllFilters() {
+    document.getElementById('searchInput').value = '';
+    const vbFilter = document.getElementById('filterVB');
+    for (let i = 0; i < vbFilter.options.length; i++) {
+        vbFilter.options[i].selected = false;
+    }
+    document.getElementById('filterEstadoPago').value = '';
+    document.getElementById('filterAPagar').value = '';
+    document.getElementById('filterCesion').value = '';
+    document.getElementById('filterFechaDesde').value = '';
+    document.getElementById('filterFechaHasta').value = '';
+    document.getElementById('filterTipoFecha').value = 'Fecha de Pago';
+    
+    filteredData = [...originalData];
+    currentPage = 1;
+    renderTable();
+}
+
+async function saveChanges() {
+    try {
+        const button = document.getElementById('saveChanges');
+        button.textContent = 'Guardando...';
+        button.disabled = true;
+        
+        const response = await fetch('/api/pagos/plantilla-preliminar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                data: originalData
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('¡Cambios guardados exitosamente!');
+        } else {
+            alert('Error al guardar cambios: ' + (result.message || 'Error desconocido'));
+        }
+    } catch (error) {
+        console.error('Error saving changes:', error);
+        alert('Error al guardar cambios: ' + error.message);
+    } finally {
+        const button = document.getElementById('saveChanges');
+        button.textContent = 'Guardar Cambios';
+        button.disabled = false;
+    }
+}
+
+async function downloadData() {
+    try {
+        const button = document.getElementById('downloadData');
+        button.textContent = 'Descargando...';
+        button.disabled = true;
+        
+        // Collect current filter parameters
+        const vbFilterElement = document.getElementById('filterVB');
+        const vbFilterValues = Array.from(vbFilterElement.selectedOptions).map(option => option.value);
+        const filterParams = {
+            searchTerm: document.getElementById('searchInput').value,
+            vbFilter: vbFilterValues.join(','),
+            estadoPagoFilter: document.getElementById('filterEstadoPago').value,
+            aPagarFilter: document.getElementById('filterAPagar').value,
+            cesionFilter: document.getElementById('filterCesion').value,
+            fechaDesde: document.getElementById('filterFechaDesde').value,
+            fechaHasta: document.getElementById('filterFechaHasta').value,
+            tipoFecha: document.getElementById('filterTipoFecha').value
+        };
+        
+        // Send filter parameters as query string
+        const queryString = new URLSearchParams(filterParams).toString();
+        const response = await fetch(`/api/pagos/plantilla-preliminar/download?${queryString}`);
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'plantilla_preliminar_filtrada.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } else {
+            const result = await response.json();
+            alert('Error al descargar: ' + (result.message || 'Error desconocido'));
+        }
+    } catch (error) {
+        console.error('Error downloading data:', error);
+        alert('Error al descargar: ' + error.message);
+    } finally {
+        const button = document.getElementById('downloadData');
+        button.textContent = 'Descargar Excel';
+        button.disabled = false;
+    }
+}
+
+function sortTable(column) {
+    if (sortColumn === column) {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortColumn = column;
+        sortDirection = 'asc';
+    }
+    
+    filteredData.sort((a, b) => {
+        let valueA = a[column] || '';
+        let valueB = b[column] || '';
+        
+        // Check if values are numeric
+        const isNumericA = !isNaN(valueA) && valueA !== '';
+        const isNumericB = !isNaN(valueB) && valueB !== '';
+        
+        if (isNumericA && isNumericB) {
+            valueA = parseFloat(valueA);
+            valueB = parseFloat(valueB);
+        } else {
+            valueA = String(valueA).toLowerCase();
+            valueB = String(valueB).toLowerCase();
+        }
+        
+        if (valueA < valueB) {
+            return sortDirection === 'asc' ? -1 : 1;
+        }
+        if (valueA > valueB) {
+            return sortDirection === 'asc' ? 1 : -1;
+        }
+        return 0;
+    });
+    
+    currentPage = 1;
+    renderTable();
+}
+
+function selectAllFiltered() {
+    if (!filteredData || filteredData.length === 0) {
+        console.log('No hay datos filtrados para seleccionar');
+        return;
+    }
+    
+    let changesCount = 0;
+    
+    filteredData.forEach(filteredRow => {
+        const originalIndex = originalData.findIndex(r => r === filteredRow);
+        if (originalIndex !== -1) {
+            const currentValue = originalData[originalIndex]['A pagar'];
+            
+            // Solo cambiar si no está ya seleccionado
+            if (currentValue !== 'Sí' && currentValue !== true) {
+                // Actualizar en originalData
+                originalData[originalIndex]['A pagar'] = 'Sí';
+                
+                // Actualizar Monto Pago = Saldo cuando se selecciona
+                const saldoValue = originalData[originalIndex]['Saldo'] || '0';
+                originalData[originalIndex]['Monto Pago'] = saldoValue;
+                
+                // Actualizar en filteredData también
+                filteredRow['A pagar'] = 'Sí';
+                filteredRow['Monto Pago'] = saldoValue;
+                
+                changesCount++;
+            }
+        }
+    });
+    
+    if (changesCount > 0) {
+        console.log(`Seleccionados ${changesCount} registros filtrados`);
+        renderTable();
+        updateIndicators();
+    } else {
+        console.log('Todos los registros filtrados ya estaban seleccionados');
+    }
+}
+
+function deselectAllFiltered() {
+    if (!filteredData || filteredData.length === 0) {
+        console.log('No hay datos filtrados para deseleccionar');
+        return;
+    }
+    
+    let changesCount = 0;
+    
+    filteredData.forEach(filteredRow => {
+        const originalIndex = originalData.findIndex(r => r === filteredRow);
+        if (originalIndex !== -1) {
+            const currentValue = originalData[originalIndex]['A pagar'];
+            
+            // Solo cambiar si está seleccionado
+            if (currentValue === 'Sí' || currentValue === true) {
+                // Actualizar en originalData
+                originalData[originalIndex]['A pagar'] = 'No';
+                
+                // Actualizar Monto Pago = 0 cuando se deselecciona
+                originalData[originalIndex]['Monto Pago'] = '0';
+                
+                // Actualizar en filteredData también
+                filteredRow['A pagar'] = 'No';
+                filteredRow['Monto Pago'] = '0';
+                
+                changesCount++;
+            }
+        }
+    });
+    
+    if (changesCount > 0) {
+        console.log(`Deseleccionados ${changesCount} registros filtrados`);
+        renderTable();
+        updateIndicators();
+    } else {
+        console.log('Todos los registros filtrados ya estaban deseleccionados');
+    }
+}
+
+// Email functionality variables and functions
+let defaultRecipients = [
+    'iavendano@constructoraicc.cl',
+    'iespinoza@constructoraicc.cl',
+    'jgutierrez@constructoraicc.cl',
+    'cluchsinger@constructoraicc.cl',
+    'mzavala@constructoraicc.cl',
+    'ccarreno@constructoraicc.cl'
+];
+
+let selectedRecipients = [...defaultRecipients];
+
+function showEmailModal() {
+    populateRecipientsList();
+    document.getElementById('emailModal').style.display = 'block';
+}
+
+function hideEmailModal() {
+    document.getElementById('emailModal').style.display = 'none';
+}
+
+function populateRecipientsList() {
+    const recipientsList = document.getElementById('recipientsList');
+    recipientsList.innerHTML = '';
+    
+    selectedRecipients.forEach((email, index) => {
+        const recipientDiv = document.createElement('div');
+        recipientDiv.style.cssText = 'display: flex; align-items: center; margin-bottom: 8px; padding: 5px; background-color: #333; border-radius: 4px;';
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = true;
+        checkbox.style.cssText = 'margin-right: 10px;';
+        checkbox.addEventListener('change', (e) => {
+            if (!e.target.checked) {
+                selectedRecipients.splice(selectedRecipients.indexOf(email), 1);
+                populateRecipientsList();
+            }
+        });
+        
+        const emailSpan = document.createElement('span');
+        emailSpan.textContent = email;
+        emailSpan.style.cssText = 'flex: 1; color: #ffffff;';
+        
+        const removeBtn = document.createElement('button');
+        removeBtn.textContent = 'X';
+        removeBtn.style.cssText = 'margin-left: 10px; padding: 2px 8px; background-color: #dc3545; color: white; border: none; border-radius: 2px; cursor: pointer; font-size: 12px;';
+        removeBtn.addEventListener('click', () => {
+            selectedRecipients.splice(selectedRecipients.indexOf(email), 1);
+            populateRecipientsList();
+        });
+        
+        recipientDiv.appendChild(checkbox);
+        recipientDiv.appendChild(emailSpan);
+        recipientDiv.appendChild(removeBtn);
+        recipientsList.appendChild(recipientDiv);
+    });
+}
+
+function addRecipient() {
+    const customRecipientInput = document.getElementById('customRecipient');
+    const email = customRecipientInput.value.trim();
+    
+    if (email && !selectedRecipients.includes(email)) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (emailRegex.test(email)) {
+            selectedRecipients.push(email);
+            populateRecipientsList();
+            customRecipientInput.value = '';
+        } else {
+            alert('Por favor ingrese un email válido.');
+        }
+    } else if (selectedRecipients.includes(email)) {
+        alert('Este email ya está en la lista.');
+    }
+}
+
+async function sendEmailWithExcel() {
+    if (selectedRecipients.length === 0) {
+        alert('Debe seleccionar al menos un destinatario.');
+        return;
+    }
+    
+    const sendButton = document.getElementById('sendEmail');
+    const originalText = sendButton.textContent;
+    sendButton.textContent = 'Enviando...';
+    sendButton.disabled = true;
+    
+    try {
+        // Get current filter parameters (same as downloadData function)
+        const vbFilterElement = document.getElementById('filterVB');
+        const vbFilterValues = Array.from(vbFilterElement.selectedOptions).map(option => option.value);
+        const filterParams = {
+            searchTerm: document.getElementById('searchInput').value,
+            vbFilter: vbFilterValues.join(','),
+            estadoPagoFilter: document.getElementById('filterEstadoPago').value,
+            aPagarFilter: document.getElementById('filterAPagar').value,
+            cesionFilter: document.getElementById('filterCesion').value,
+            fechaDesde: document.getElementById('filterFechaDesde').value,
+            fechaHasta: document.getElementById('filterFechaHasta').value,
+            tipoFecha: document.getElementById('filterTipoFecha').value
+        };
+        
+        const emailData = {
+            recipients: selectedRecipients,
+            subject: document.getElementById('emailSubject').value,
+            content: document.getElementById('emailContent').value,
+            filterParams: filterParams
+        };
+        
+        const response = await fetch('/api/pagos/plantilla-preliminar/email', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(emailData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('¡Email enviado exitosamente!');
+            hideEmailModal();
+        } else {
+            alert('Error al enviar email: ' + (result.message || 'Error desconocido'));
+        }
+    } catch (error) {
+        console.error('Error sending email:', error);
+        alert('Error al enviar email: ' + error.message);
+    } finally {
+        sendButton.textContent = originalText;
+        sendButton.disabled = false;
+    }
+}
+
+// Set up email modal event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Existing load data call
+    loadData();
+    
+    // Email modal event listeners
+    document.getElementById('cancelEmail').addEventListener('click', hideEmailModal);
+    document.getElementById('sendEmail').addEventListener('click', sendEmailWithExcel);
+    document.getElementById('addRecipient').addEventListener('click', addRecipient);
+    
+    // Allow adding recipient by pressing Enter
+    document.getElementById('customRecipient').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            addRecipient();
+        }
+    });
+    
+    // Close modal when clicking outside
+    document.getElementById('emailModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            hideEmailModal();
+        }
+    });
+});
+</script>
+{% endblock %}

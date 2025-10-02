@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}Preparar Facturas - Constructora ICC{% endblock %}
+
+{% block content %}
+<div class="welcome">
+    <h2>📅 Preparar Facturas</h2>
+    <p>Selecciona el rango de fechas para actualizar las facturas</p>
+</div>
+
+<div class="card">
+    <h3>Selección de Fechas</h3>
+    <form id="preparar-facturas-form" class="date-form">
+        <div class="form-group">
+            <label for="fecha_inicio">Fecha de Inicio:</label>
+            <input type="date" id="fecha_inicio" name="fecha_inicio" required>
+        </div>
+
+        <div class="form-group">
+            <label for="fecha_final">Fecha de Término:</label>
+            <input type="date" id="fecha_final" name="fecha_final" required>
+        </div>
+
+        <div class="form-group">
+            <button type="submit" id="actualizar-btn" class="btn-primary">
+                <span id="btn-text">Actualizar</span>
+                <span id="btn-spinner" class="spinner" style="display: none;">⟳</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+<div id="progress-container" class="card" style="display: none;">
+    <h3>Estado del Proceso</h3>
+    <div class="progress-info">
+        <div id="progress-message">Procesando facturas...</div>
+        <div class="progress-bar">
+            <div id="progress-fill" class="progress-fill"></div>
+        </div>
+    </div>
+</div>
+
+<div id="result-container" class="card" style="display: none;">
+    <h3>Resultado</h3>
+    <div id="result-message"></div>
+</div>
+
+<style>
+.date-form {
+    max-width: 400px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #e0e0e0;
+}
+
+.form-group input[type="date"] {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+}
+
+.form-group input[type="date"]:focus {
+    border-color: #0066cc;
+    outline: none;
+}
+
+.btn-primary {
+    background-color: #0066cc;
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: #0056b3;
+}
+
+.btn-primary:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.progress-info {
+    text-align: center;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 20px;
+    background-color: #f0f0f0;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: #0066cc;
+    width: 0%;
+    transition: width 0.3s ease;
+    animation: progress-pulse 2s ease-in-out infinite;
+}
+
+@keyframes progress-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.success-message {
+    color: #28a745;
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    padding: 12px;
+    border-radius: 8px;
+}
+
+.error-message {
+    color: #dc3545;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    padding: 12px;
+    border-radius: 8px;
+}
+</style>
+
+<script>
+document.getElementById('preparar-facturas-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const fechaInicio = document.getElementById('fecha_inicio').value;
+    const fechaFinal = document.getElementById('fecha_final').value;
+    
+    if (!fechaInicio || !fechaFinal) {
+        alert('Por favor selecciona ambas fechas');
+        return;
+    }
+    
+    if (fechaInicio > fechaFinal) {
+        alert('La fecha de inicio no puede ser posterior a la fecha final');
+        return;
+    }
+    
+    // Mostrar indicador de progreso
+    document.getElementById('progress-container').style.display = 'block';
+    document.getElementById('result-container').style.display = 'none';
+    document.getElementById('actualizar-btn').disabled = true;
+    document.getElementById('btn-text').style.display = 'none';
+    document.getElementById('btn-spinner').style.display = 'inline';
+    
+    // Simular progreso
+    const progressFill = document.getElementById('progress-fill');
+    const progressMessage = document.getElementById('progress-message');
+    
+    progressMessage.textContent = 'Iniciando proceso...';
+    progressFill.style.width = '10%';
+    
+    setTimeout(() => {
+        progressMessage.textContent = 'Obteniendo fichas completas...';
+        progressFill.style.width = '25%';
+    }, 500);
+    
+    setTimeout(() => {
+        progressMessage.textContent = 'Buscando facturas...';
+        progressFill.style.width = '50%';
+    }, 1000);
+    
+    setTimeout(() => {
+        progressMessage.textContent = 'Cruzando datos...';
+        progressFill.style.width = '75%';
+    }, 1500);
+    
+    try {
+        const formData = new FormData();
+        formData.append('fecha_inicio', fechaInicio);
+        formData.append('fecha_final', fechaFinal);
+        
+        const response = await fetch('/api/preparar-facturas', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        // Completar progreso
+        progressMessage.textContent = 'Finalizando...';
+        progressFill.style.width = '100%';
+        
+        setTimeout(() => {
+            document.getElementById('progress-container').style.display = 'none';
+            document.getElementById('result-container').style.display = 'block';
+            
+            const resultMessage = document.getElementById('result-message');
+            
+            if (response.ok && result.success) {
+                resultMessage.innerHTML = `<div class="success-message">
+                    ✅ ${result.message}
+                    <br><small>Facturas procesadas desde ${fechaInicio} hasta ${fechaFinal}</small>
+                </div>`;
+            } else {
+                resultMessage.innerHTML = `<div class="error-message">
+                    ❌ Error: ${result.detail || 'Error desconocido'}
+                </div>`;
+            }
+            
+            // Restaurar botón
+            document.getElementById('actualizar-btn').disabled = false;
+            document.getElementById('btn-text').style.display = 'inline';
+            document.getElementById('btn-spinner').style.display = 'none';
+        }, 500);
+        
+    } catch (error) {
+        console.error('Error:', error);
+        
+        // Ocultar progreso y mostrar error
+        document.getElementById('progress-container').style.display = 'none';
+        document.getElementById('result-container').style.display = 'block';
+        document.getElementById('result-message').innerHTML = `<div class="error-message">
+            ❌ Error de conexión: ${error.message}
+        </div>`;
+        
+        // Restaurar botón
+        document.getElementById('actualizar-btn').disabled = false;
+        document.getElementById('btn-text').style.display = 'inline';
+        document.getElementById('btn-spinner').style.display = 'none';
+    }
+});
+
+// Establecer fecha por defecto (último mes)
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date();
+    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+    
+    document.getElementById('fecha_final').value = today.toISOString().split('T')[0];
+    document.getElementById('fecha_inicio').value = lastMonth.toISOString().split('T')[0];
+});
+</script>
+{% endblock %}
