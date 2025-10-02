@@ -1,0 +1,6 @@
+Factura,Fecha Emisión,Rut,Razón Social,VB,Centro de Gestión,Tipo Factura,Monto Total,Asociación,Estado de Pago,Número NC,Monto NC,Saldo,Fecha de Pago,A pagar,Monto Pago,Cesión,Cesionario,Rut Cesionario
+3482819,2025-07-10,81293200-4,AUSIN HNOS. S.A.,Aprobada,1420 Unimarc PA Colina Brisas del Norte,Factura Electrónica,245048.0,Totalmente Asociada,Sin Pagos,,0,245048.0,2025-08-09,Sí,245048.0,No,,
+543,2025-07-10,77012466-2,CONSTRUCTORA REYBE SPA,Ingresada,1413 Inacap Apoquindo acceso univ y otros,Factura Electrónica,2859374.0,No Asociada,Sin Pagos,,0,2859374.0,2025-08-09,No,,No,,
+2524437,2025-07-10,80565900-9,YOLITO BALART HERMANOS LTDA.,Parcialmente Aprobada,1421 Super 10 S.A.,Factura Electrónica,171679.0,Totalmente Asociada,Sin Pagos,,0,171679.0,2025-08-09,No,,No,,
+191,2025-07-10,77882438-8,CONSTRUCTORA   FAS   SPA,Aprobada,1400 Habilitacion Nike MUT,Factura Electrónica,773500.0,Totalmente Asociada,Sin Pagos,,0,773500.0,2025-08-09,Sí,773500.0,Sí,FACTOR CARGA SPA,76543210-1
+123456,2025-07-15,12345678-9,PROVEEDOR EJEMPLO,Aprobada,1500 Proyecto Ejemplo,Factura Electrónica,1500000.0,Totalmente Asociada,Sin Pagos,,0,1500000.0,2025-08-14,Sí,1500000.0,No,,
